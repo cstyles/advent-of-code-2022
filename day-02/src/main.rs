@@ -1,3 +1,6 @@
+use Shape::*;
+use Outcome::*;
+
 #[derive(Debug, Copy, Clone)]
 enum Shape {
     Rock,
@@ -7,7 +10,6 @@ enum Shape {
 
 impl From<&str> for Shape {
     fn from(string: &str) -> Self {
-        use Shape::*;
         match string {
             "A" | "X" => Rock,
             "B" | "Y" => Paper,
@@ -19,9 +21,6 @@ impl From<&str> for Shape {
 
 impl Shape {
     fn play(&self, other: &Self) -> Outcome {
-        use Outcome::*;
-        use Shape::*;
-
         match (self, other) {
             (Rock, Rock) => Draw,
             (Rock, Paper) => Lose,
@@ -52,9 +51,6 @@ impl Shape {
     }
 
     fn what_to_play(&self, desired_outcome: Outcome) -> Self {
-        use Outcome::*;
-        use Shape::*;
-
         match (self, desired_outcome) {
             (Rock, Win) => Paper,
             (Rock, Lose) => Scissors,
@@ -78,7 +74,6 @@ enum Outcome {
 
 impl From<&str> for Outcome {
     fn from(string: &str) -> Self {
-        use Outcome::*;
         match string {
             "X" => Lose,
             "Y" => Draw,
