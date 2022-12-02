@@ -50,6 +50,23 @@ impl Shape {
 
         shape_score + outcome_score
     }
+
+    fn what_to_play(&self, desired_outcome: Outcome) -> Self {
+        use Outcome::*;
+        use Shape::*;
+
+        match (self, desired_outcome) {
+            (Rock, Win) => Paper,
+            (Rock, Lose) => Scissors,
+            (Rock, Draw) => Rock,
+            (Paper, Win) => Scissors,
+            (Paper, Lose) => Rock,
+            (Paper, Draw) => Paper,
+            (Scissors, Win) => Rock,
+            (Scissors, Lose) => Paper,
+            (Scissors, Draw) => Scissors,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -57,6 +74,18 @@ enum Outcome {
     Win,
     Lose,
     Draw,
+}
+
+impl From<&str> for Outcome {
+    fn from(string: &str) -> Self {
+        use Outcome::*;
+        match string {
+            "X" => Lose,
+            "Y" => Draw,
+            "Z" => Win,
+            _ => unreachable!("invalid Outcome: {string}"),
+        }
+    }
 }
 
 impl Outcome {
@@ -71,6 +100,11 @@ impl Outcome {
 
 fn main() {
     let input = include_str!("../input.txt");
+    part1(input);
+    part2(input);
+}
+
+fn part1(input: &str) {
     let rounds: Vec<(Shape, Shape)> = input
         .lines()
         .map(|line| line.split_once(' ').unwrap())
@@ -83,4 +117,24 @@ fn main() {
         .sum();
 
     println!("part1 = {part1}");
+}
+
+fn part2(input: &str) {
+    let rounds: Vec<(Shape, Shape)> = input
+        .lines()
+        .map(|line| line.split_once(' ').unwrap())
+        .map(|(opponent, desired_outcome)| {
+            let opponent = Shape::from(opponent);
+            let desired_outcome = Outcome::from(desired_outcome);
+            let should_play = opponent.what_to_play(desired_outcome);
+            (opponent, should_play)
+        })
+        .collect();
+
+    let part2: u32 = rounds
+        .iter()
+        .map(|(opponent, you)| you.round_score(opponent))
+        .sum();
+
+    println!("part2 = {part2}");
 }
