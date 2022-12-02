@@ -105,22 +105,18 @@ fn main() {
 }
 
 fn part1(input: &str) {
-    let rounds: Vec<(Shape, Shape)> = input
+    let part1: u32 = input
         .lines()
         .map(|line| line.split_once(' ').unwrap())
         .map(|(opponent, you)| (Shape::from(opponent), Shape::from(you)))
-        .collect();
-
-    let part1: u32 = rounds
-        .iter()
-        .map(|(opponent, you)| you.round_score(opponent))
+        .map(|(opponent, you)| you.round_score(&opponent))
         .sum();
 
     println!("part1 = {part1}");
 }
 
 fn part2(input: &str) {
-    let rounds: Vec<(Shape, Shape)> = input
+    let part2: u32 = input
         .lines()
         .map(|line| line.split_once(' ').unwrap())
         .map(|(opponent, desired_outcome)| {
@@ -129,11 +125,7 @@ fn part2(input: &str) {
             let should_play = opponent.what_to_play(desired_outcome);
             (opponent, should_play)
         })
-        .collect();
-
-    let part2: u32 = rounds
-        .iter()
-        .map(|(opponent, you)| you.round_score(opponent))
+        .map(|(opponent, you)| you.round_score(&opponent))
         .sum();
 
     println!("part2 = {part2}");
