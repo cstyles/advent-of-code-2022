@@ -19,10 +19,7 @@ fn part1(input: &str) {
             let first = &line[0..midpoint];
             let second = &line[midpoint..];
 
-            let mut seen = std::collections::HashSet::with_capacity(midpoint);
-            for c in first.chars() {
-                seen.insert(c);
-            }
+            let seen: HashSet<char> = first.chars().collect();
 
             second.chars().find(|c| seen.contains(c)).unwrap()
         })
