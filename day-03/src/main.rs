@@ -16,9 +16,7 @@ fn part1(input: &str) {
         .lines()
         .map(|line| {
             let midpoint = line.len() / 2;
-            let first = &line[0..midpoint];
-            let second = &line[midpoint..];
-
+            let (first, second) = line.split_at(midpoint);
             let seen: HashSet<char> = first.chars().collect();
 
             second.chars().find(|c| seen.contains(c)).unwrap()
