@@ -7,14 +7,24 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let part1 = input
+    let ranges: Vec<_> = input
         .lines()
         .map(|line| line.split_once(',').unwrap())
         .map(|(first, second)| (parse_range(first), parse_range(second)))
+        .collect();
+
+    let part1 = ranges
+        .iter()
         .filter(|(first, second)| full_overlap(first, second))
         .count();
 
+    let part2 = ranges
+        .iter()
+        .filter(|(first, second)| partial_overlap(first, second))
+        .count();
+
     println!("part1 = {part1}");
+    println!("part2 = {part2}");
 }
 
 fn parse_range(input: &str) -> RangeInclusive<u32> {
@@ -26,6 +36,13 @@ fn parse_range(input: &str) -> RangeInclusive<u32> {
 fn full_overlap(r1: &RangeInclusive<u32>, r2: &RangeInclusive<u32>) -> bool {
     let r1_contains_r2 = r1.contains(r2.start()) && r1.contains(r2.end());
     let r2_contains_r1 = r2.contains(r1.start()) && r2.contains(r1.end());
+
+    r1_contains_r2 || r2_contains_r1
+}
+
+fn partial_overlap(r1: &RangeInclusive<u32>, r2: &RangeInclusive<u32>) -> bool {
+    let r1_contains_r2 = r1.contains(r2.start()) || r1.contains(r2.end());
+    let r2_contains_r1 = r2.contains(r1.start()) || r2.contains(r1.end());
 
     r1_contains_r2 || r2_contains_r1
 }
