@@ -42,8 +42,8 @@ fn main() {
 
     // Skip last row since it's the labels (1, 2, 3, etc.)
     for row in rows.into_iter().rev().skip(1) {
-        for (i, character) in row.into_iter().enumerate().filter(|(_i, c)| *c != ' ') {
-            towers[i].push(character);
+        for (tower, character) in towers.iter_mut().zip(row).filter(|(_tower, c)| *c != ' ') {
+            tower.push(character);
         }
     }
 
