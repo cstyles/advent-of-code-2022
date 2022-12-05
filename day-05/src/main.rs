@@ -49,13 +49,17 @@ fn main() {
 
     let moves: Vec<Move> = moves.lines().map(Move::from).collect();
 
-    play(&mut towers, &moves);
+    let part1 = play_part1(towers.clone(), &moves);
+    let part2 = play_part2(towers, &moves);
 
-    let part1: String = towers.iter().map(|tower| tower.last().unwrap()).collect();
+    let part1: String = part1.iter().map(|tower| tower.last().unwrap()).collect();
+    let part2: String = part2.iter().map(|tower| tower.last().unwrap()).collect();
+
     println!("part1 = {part1}");
+    println!("part2 = {part2}");
 }
 
-fn play(towers: &mut [Vec<char>], moves: &[Move]) {
+fn play_part1(mut towers: Vec<Vec<char>>, moves: &[Move]) -> Vec<Vec<char>> {
     for move_ in moves {
         for _ in 0..move_.count {
             let from = &mut towers[move_.from];
@@ -64,4 +68,17 @@ fn play(towers: &mut [Vec<char>], moves: &[Move]) {
             to.push(top);
         }
     }
+
+    towers
+}
+
+fn play_part2(mut towers: Vec<Vec<char>>, moves: &[Move]) -> Vec<Vec<char>> {
+    for move_ in moves {
+        let from = &mut towers[move_.from];
+        let top = from.split_off(from.len() - move_.count);
+        let to = &mut towers[move_.to];
+        to.extend_from_slice(&top);
+    }
+
+    towers
 }
