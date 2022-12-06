@@ -9,18 +9,15 @@ fn main() {
 
     let chars: Vec<_> = input.chars().collect();
 
-    for (i, window) in chars.windows(4).enumerate() {
-        let set: HashSet<_> = window.iter().collect();
-        if set.len() == 4 {
-            println!("part1 = {}", i + 4);
-            break;
-        }
-    }
+    solve(1, &chars, 4);
+    solve(2, &chars, 14);
+}
 
-    for (i, window) in chars.windows(14).enumerate() {
+fn solve(part: usize, chars: &[char], unique: usize) {
+    for (i, window) in chars.windows(unique).enumerate() {
         let set: HashSet<_> = window.iter().collect();
-        if set.len() == 14 {
-            println!("part2 = {}", i + 14);
+        if set.len() == unique {
+            println!("part{} = {}", part, i + unique);
             break;
         }
     }
