@@ -16,4 +16,12 @@ fn main() {
             break;
         }
     }
+
+    for (i, window) in chars.windows(14).enumerate() {
+        let set: HashSet<_> = window.iter().collect();
+        if set.len() == 14 {
+            println!("part2 = {}", i + 14);
+            break;
+        }
+    }
 }
