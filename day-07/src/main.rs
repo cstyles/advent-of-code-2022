@@ -73,7 +73,7 @@ fn main() {
     assert_eq!(0, leftover_lines.count()); // assert that we parsed every line
 
     let mut sizes = HashMap::default();
-    let _total_size = calculate_directory_sizes("/".into(), &root, &mut sizes);
+    let total_space_already_used = calculate_directory_sizes("/".into(), &root, &mut sizes);
 
     let part1: usize = sizes
         .values()
@@ -82,6 +82,21 @@ fn main() {
         .sum();
 
     println!("part1 = {part1}");
+
+    let total_disk_space = 70_000_000;
+    let space_necessary_for_update = 30_000_000;
+
+    let free_space = total_disk_space - total_space_already_used;
+    let need_to_delete = space_necessary_for_update - free_space;
+
+    let part2 = sizes
+        .values()
+        .copied()
+        .filter(|&size| size >= need_to_delete)
+        .min()
+        .unwrap();
+
+    println!("part2 = {part2}");
 }
 
 fn build<T: Iterator<Item = Line>>(directory: &mut Directory, mut lines: T) -> T {
