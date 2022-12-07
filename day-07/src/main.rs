@@ -1,62 +1,57 @@
 use std::collections::HashMap;
 
 #[derive(Debug)]
-enum Command {
-    CdRoot,         // cd '/'
-    CdUp,           // cd ".."
-    CdDown(String), // cd a
-    Ls,             // ls
+enum Command<'input> {
+    CdRoot,              // cd '/'
+    CdUp,                // cd ".."
+    CdDown(&'input str), // cd a
+    Ls,                  // ls
 }
 
-impl From<&str> for Command {
-    fn from(string: &str) -> Self {
+impl<'input> From<&'input str> for Command<'input> {
+    fn from(string: &'input str) -> Self {
         match string.split_once(' ') {
             None => Command::Ls,
             Some(("cd", "/")) => Command::CdRoot,
             Some(("cd", "..")) => Command::CdUp,
-            Some(("cd", name)) => Command::CdDown(name.to_string()),
+            Some(("cd", name)) => Command::CdDown(name),
             _ => unreachable!("not a command: {}", string),
         }
     }
 }
 
 #[derive(Debug)]
-enum Line {
-    Cmd(Command),
-    File(usize, String),
-    Dir(String),
+enum Line<'input> {
+    Cmd(Command<'input>),
+    File(usize, &'input str),
+    Dir(&'input str),
 }
 
-impl From<&str> for Line {
-    fn from(string: &str) -> Self {
+impl<'input> From<&'input str> for Line<'input> {
+    fn from(string: &'input str) -> Self {
         let (first, rest) = string.split_once(' ').unwrap();
 
         match first {
             "$" => Line::Cmd(Command::from(rest)),
-            "dir" => Line::Dir(rest.to_string()),
-            size => {
-                let size = size.parse().unwrap();
-                let name = rest.to_string();
-                Line::File(size, name)
-            }
+            "dir" => Line::Dir(rest),
+            size => Line::File(size.parse().unwrap(), first),
         }
     }
 }
 
 #[derive(Debug, Default)]
-struct Directory {
-    files: HashMap<String, usize>,
-    directories: HashMap<String, Self>,
+struct Directory<'input> {
+    files: HashMap<&'input str, usize>,
+    directories: HashMap<&'input str, Self>,
 }
 
-impl Directory {
-    fn add_file(&mut self, name: impl ToString, size: usize) {
-        self.files.insert(name.to_string(), size);
+impl<'input> Directory<'input> {
+    fn add_file(&mut self, name: &'input str, size: usize) {
+        self.files.insert(name, size);
     }
 
-    fn add_directory(&mut self, name: impl ToString) {
-        self.directories
-            .insert(name.to_string(), Directory::default());
+    fn add_directory(&mut self, name: &'input str) {
+        self.directories.insert(name, Directory::default());
     }
 }
 
@@ -99,7 +94,10 @@ fn main() {
     println!("part2 = {part2}");
 }
 
-fn build<T: Iterator<Item = Line>>(directory: &mut Directory, mut lines: T) -> T {
+fn build<'input, T: Iterator<Item = Line<'input>>>(
+    directory: &mut Directory<'input>,
+    mut lines: T,
+) -> T {
     while let Some(line) = lines.next() {
         match line {
             Line::Cmd(Command::Ls) => {} // no-op
