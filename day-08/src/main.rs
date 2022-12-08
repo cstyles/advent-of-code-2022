@@ -22,6 +22,12 @@ impl From<&str> for Grid {
 }
 
 impl Grid {
+    fn get(&self, row_number: usize, column_number: usize) -> Option<&u32> {
+        self.0
+            .get(row_number)
+            .and_then(|row| row.get(column_number))
+    }
+
     fn rows(&self) -> impl Iterator<Item = &Vec<u32>> {
         self.0.iter()
     }
@@ -61,6 +67,11 @@ fn main() {
     };
 
     let grid = Grid::from(input);
+    part1(&grid);
+    part2(&grid);
+}
+
+fn part1(grid: &Grid) {
     let mut visible: Trees = Trees::default();
 
     for (row_number, row) in grid.rows().enumerate() {
@@ -96,6 +107,85 @@ fn main() {
     }
 
     println!("part1 = {}", visible.len());
+}
+
+fn part2(grid: &Grid) {
+    let dimension = grid.rows().count();
+    let mut max_scenic_score = 0;
+
+    // Iterate over all non-edge trees
+    for (row_number, row) in grid.rows().enumerate().skip(1).take(dimension - 2) {
+        for (column_number, _tree) in row.iter().enumerate().skip(1).take(dimension - 2) {
+            let scenic_score = scenic_score(grid, row_number, column_number);
+            if scenic_score > max_scenic_score {
+                max_scenic_score = scenic_score;
+            }
+        }
+    }
+
+    println!("part2 = {max_scenic_score}");
+}
+
+fn scenic_score(grid: &Grid, row_number: usize, column_number: usize) -> u32 {
+    let this_tree = grid.0[row_number][column_number];
+
+    // Look left
+    let mut left = 0;
+    for x in (0..=column_number - 1).rev() {
+        match grid.get(row_number, x) {
+            None => break,
+            Some(height) => {
+                left += 1;
+                if *height >= this_tree {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Look right
+    let mut right = 0;
+    for x in (column_number + 1).. {
+        match grid.get(row_number, x) {
+            None => break,
+            Some(height) => {
+                right += 1;
+                if *height >= this_tree {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Look up
+    let mut up = 0;
+    for y in (0..=row_number - 1).rev() {
+        match grid.get(y, column_number) {
+            None => break,
+            Some(height) => {
+                up += 1;
+                if *height >= this_tree {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Look down
+    let mut down = 0;
+    for y in (row_number + 1).. {
+        match grid.get(y, column_number) {
+            None => break,
+            Some(height) => {
+                down += 1;
+                if *height >= this_tree {
+                    break;
+                }
+            }
+        }
+    }
+
+    left * right * up * down
 }
 
 fn find_visible_trees(
