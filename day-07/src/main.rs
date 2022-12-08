@@ -34,7 +34,7 @@ impl<'input> From<&'input str> for Line<'input> {
         match first {
             "$" => Line::Cmd(Command::from(rest)),
             "dir" => Line::Dir(rest),
-            size => Line::File(size.parse().unwrap(), first),
+            size => Line::File(size.parse().unwrap(), rest),
         }
     }
 }
