@@ -64,7 +64,7 @@ fn main() {
 
     let mut root = Directory::default();
     let lines = input.lines().map(Line::from).skip(1);
-    let leftover_lines = build(&mut root, lines);
+    let leftover_lines = build_filesystem(&mut root, lines);
     assert_eq!(0, leftover_lines.count()); // assert that we parsed every line
 
     let mut sizes = HashMap::default();
@@ -94,7 +94,7 @@ fn main() {
     println!("part2 = {part2}");
 }
 
-fn build<'input, T: Iterator<Item = Line<'input>>>(
+fn build_filesystem<'input, T: Iterator<Item = Line<'input>>>(
     directory: &mut Directory<'input>,
     mut lines: T,
 ) -> T {
@@ -105,7 +105,7 @@ fn build<'input, T: Iterator<Item = Line<'input>>>(
             Line::Cmd(Command::CdRoot) => unreachable!("let's pretend this doesn't exist"),
             Line::Cmd(Command::CdDown(name)) => {
                 let descend_into = directory.directories.get_mut(&name).unwrap();
-                lines = build(descend_into, lines);
+                lines = build_filesystem(descend_into, lines);
             }
             Line::File(size, name) => directory.add_file(name, size),
             Line::Dir(name) => directory.add_directory(name),
@@ -116,7 +116,7 @@ fn build<'input, T: Iterator<Item = Line<'input>>>(
 }
 
 fn calculate_directory_sizes(
-    name: String,
+    current_directory: String,
     directory: &Directory,
     sizes: &mut HashMap<String, usize>,
 ) -> usize {
@@ -124,10 +124,12 @@ fn calculate_directory_sizes(
     let size_of_directories: usize = directory
         .directories
         .iter()
-        .map(|(dir_name, d)| calculate_directory_sizes(format!("{name}/{dir_name}"), d, sizes))
+        .map(|(dir_name, directory)| {
+            calculate_directory_sizes(format!("{current_directory}/{dir_name}"), directory, sizes)
+        })
         .sum();
 
     let total = size_of_files + size_of_directories;
-    sizes.insert(name, total);
+    sizes.insert(current_directory, total);
     total
 }
