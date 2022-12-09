@@ -129,10 +129,10 @@ fn part2(grid: &Grid) {
 }
 
 fn scenic_score(grid: &Grid, row_number: usize, column_number: usize) -> u32 {
-    let left = Left::view_from(grid, row_number, column_number);
-    let right = Right::view_from(grid, row_number, column_number);
-    let up = Up::view_from(grid, row_number, column_number);
-    let down = Down::view_from(grid, row_number, column_number);
+    let left = look::<Left>(grid, row_number, column_number);
+    let right = look::<Right>(grid, row_number, column_number);
+    let up = look::<Up>(grid, row_number, column_number);
+    let down = look::<Down>(grid, row_number, column_number);
 
     left * right * up * down
 }
@@ -165,25 +165,25 @@ trait Direction {
     type Range: Iterator<Item = (usize, usize)>;
 
     fn range(row_number: usize, column_number: usize) -> Self::Range;
+}
 
-    fn view_from(grid: &Grid, row_number: usize, column_number: usize) -> u32 {
-        let this_tree = grid.get(row_number, column_number).unwrap();
-        let mut total = 0;
+fn look<Dir: Direction>(grid: &Grid, row_number: usize, column_number: usize) -> u32 {
+    let this_tree = grid.get(row_number, column_number).unwrap();
+    let mut total = 0;
 
-        for (row_number, column_number) in Self::range(row_number, column_number) {
-            match grid.get(row_number, column_number) {
-                None => break,
-                Some(height) => {
-                    total += 1;
-                    if height >= this_tree {
-                        break;
-                    }
+    for (row_number, column_number) in Dir::range(row_number, column_number) {
+        match grid.get(row_number, column_number) {
+            None => break,
+            Some(height) => {
+                total += 1;
+                if height >= this_tree {
+                    break;
                 }
             }
         }
-
-        total
     }
+
+    total
 }
 
 struct Left;
