@@ -46,9 +46,7 @@ impl Grid {
         let mut row_number = 0;
         Some(std::iter::from_fn(move || {
             row_number += 1;
-            self.0
-                .get(row_number - 1)
-                .and_then(|row| row.get(column_number))
+            self.get(row_number - 1, column_number)
         }))
     }
 
