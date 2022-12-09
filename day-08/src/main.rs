@@ -1,4 +1,6 @@
 use std::collections::HashSet;
+use std::iter::{Zip, Rev, Repeat};
+use std::ops::{RangeInclusive, RangeFrom};
 
 type Trees = HashSet<(usize, usize)>;
 
@@ -127,63 +129,10 @@ fn part2(grid: &Grid) {
 }
 
 fn scenic_score(grid: &Grid, row_number: usize, column_number: usize) -> u32 {
-    let this_tree = grid.0[row_number][column_number];
-
-    // Look left
-    let mut left = 0;
-    for x in (0..=column_number - 1).rev() {
-        match grid.get(row_number, x) {
-            None => break,
-            Some(height) => {
-                left += 1;
-                if *height >= this_tree {
-                    break;
-                }
-            }
-        }
-    }
-
-    // Look right
-    let mut right = 0;
-    for x in (column_number + 1).. {
-        match grid.get(row_number, x) {
-            None => break,
-            Some(height) => {
-                right += 1;
-                if *height >= this_tree {
-                    break;
-                }
-            }
-        }
-    }
-
-    // Look up
-    let mut up = 0;
-    for y in (0..=row_number - 1).rev() {
-        match grid.get(y, column_number) {
-            None => break,
-            Some(height) => {
-                up += 1;
-                if *height >= this_tree {
-                    break;
-                }
-            }
-        }
-    }
-
-    // Look down
-    let mut down = 0;
-    for y in (row_number + 1).. {
-        match grid.get(y, column_number) {
-            None => break,
-            Some(height) => {
-                down += 1;
-                if *height >= this_tree {
-                    break;
-                }
-            }
-        }
-    }
+    let left = Left::view_from(grid, row_number, column_number);
+    let right = Right::view_from(grid, row_number, column_number);
+    let up = Up::view_from(grid, row_number, column_number);
+    let down = Down::view_from(grid, row_number, column_number);
 
     left * right * up * down
 }
@@ -210,4 +159,66 @@ fn insert(coordinate: usize, other_coordinate: Index, visible: &mut Trees) {
         Index::Row(row_number) => visible.insert((row_number, coordinate)),
         Index::Column(column_number) => visible.insert((coordinate, column_number)),
     };
+}
+
+trait Direction {
+    type Range: Iterator<Item = (usize, usize)>;
+
+    fn range(row_number: usize, column_number: usize) -> Self::Range;
+
+    fn view_from(grid: &Grid, row_number: usize, column_number: usize) -> u32 {
+        let this_tree = grid.get(row_number, column_number).unwrap();
+        let mut total = 0;
+
+        for (row_number, column_number) in Self::range(row_number, column_number) {
+            match grid.get(row_number, column_number) {
+                None => break,
+                Some(height) => {
+                    total += 1;
+                    if height >= this_tree {
+                        break;
+                    }
+                }
+            }
+        }
+
+        total
+    }
+}
+
+struct Left;
+struct Right;
+struct Up;
+struct Down;
+
+impl Direction for Left {
+    type Range = Zip<Repeat<usize>, Rev<RangeInclusive<usize>>>;
+
+    fn range(row_number: usize, column_number: usize) -> Self::Range {
+        std::iter::repeat(row_number).zip((0..=column_number - 1).rev())
+    }
+}
+
+impl Direction for Right {
+    type Range = Zip<Repeat<usize>, RangeFrom<usize>>;
+
+    fn range(row_number: usize, column_number: usize) -> Self::Range {
+        std::iter::repeat(row_number).zip((column_number + 1)..)
+    }
+}
+
+impl Direction for Up {
+    type Range = Zip<Rev<RangeInclusive<usize>>, Repeat<usize>>;
+
+    fn range(row_number: usize, column_number: usize) -> Self::Range {
+        (0..=row_number - 1).rev().zip(std::iter::repeat(column_number))
+    }
+}
+
+impl Direction for Down {
+    type Range = Zip<RangeFrom<usize>, Repeat<usize>>;
+
+    fn range(row_number: usize, column_number: usize) -> Self::Range {
+        (row_number + 1..).zip(std::iter::repeat(column_number))
+    }
 }
