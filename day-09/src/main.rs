@@ -47,31 +47,31 @@ struct Point {
 }
 
 impl Point {
-    fn left(&self) -> Self {
+    fn left(self) -> Self {
         Self {
             x: self.x - 1,
-            y: self.y,
+            ..self
         }
     }
 
-    fn right(&self) -> Self {
+    fn right(self) -> Self {
         Self {
             x: self.x + 1,
-            y: self.y,
+            ..self
         }
     }
 
-    fn up(&self) -> Self {
+    fn up(self) -> Self {
         Self {
-            x: self.x,
             y: self.y + 1,
+            ..self
         }
     }
 
-    fn down(&self) -> Self {
+    fn down(self) -> Self {
         Self {
-            x: self.x,
             y: self.y - 1,
+            ..self
         }
     }
 
