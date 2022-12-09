@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::fs::read_to_string;
 
 use Direction::*;
 
@@ -121,11 +122,11 @@ impl Point {
 }
 
 fn main() {
-    let input = if std::env::var("TEST").is_ok() {
-        include_str!("../test_input.txt")
-    } else {
-        include_str!("../input.txt")
-    };
+    let input = match std::env::var("TEST") {
+        Ok(number) => read_to_string(format!("test_input{number}.txt")),
+        Err(_) => read_to_string("input.txt"),
+    }
+    .unwrap();
 
     let mut head = Point::default();
     let mut tail = Point::default();
