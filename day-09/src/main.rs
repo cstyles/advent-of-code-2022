@@ -84,7 +84,7 @@ impl Point {
         }
     }
 
-    fn apply(mut self, motion: Motion) -> impl Iterator<Item = Self> {
+    fn apply(&mut self, motion: Motion) -> impl Iterator<Item = Self> + '_ {
         let mut step = 0;
 
         std::iter::from_fn(move || {
@@ -92,8 +92,8 @@ impl Point {
             if step > motion.steps {
                 None
             } else {
-                self = self.shift(motion.direction);
-                Some(self)
+                *self = self.shift(motion.direction);
+                Some(*self)
             }
         })
     }
@@ -133,8 +133,7 @@ fn main() {
     let mut seen: HashSet<Point> = [tail].into();
 
     for motion in input.lines().map(Motion::from) {
-        for new_head in head.apply(motion) {
-            head = new_head;
+        for head in head.apply(motion) {
             tail.follow(head);
             seen.insert(tail);
         }
@@ -155,8 +154,7 @@ fn main() {
     let mut seen: HashSet<Point> = [tail_9].into();
 
     for motion in input.lines().map(Motion::from) {
-        for new_head in head.apply(motion) {
-            head = new_head;
+        for head in head.apply(motion) {
             tail_1.follow(head);
             tail_2.follow(tail_1);
             tail_3.follow(tail_2);
