@@ -128,20 +128,11 @@ fn main() {
     }
     .unwrap();
 
-    let mut head = Point::default();
-    let mut tail = Point::default();
-    let mut seen: HashSet<Point> = [tail].into();
+    let mut part1_head = Point::default();
+    let mut part1_tail = Point::default();
+    let mut part1_seen: HashSet<Point> = [part1_tail].into();
 
-    for motion in input.lines().map(Motion::from) {
-        for head in head.apply(motion) {
-            tail.follow(head);
-            seen.insert(tail);
-        }
-    }
-
-    println!("part1 = {}", seen.len());
-
-    let mut head = Point::default();
+    let mut part2_head = Point::default();
     let mut tail_1 = Point::default();
     let mut tail_2 = Point::default();
     let mut tail_3 = Point::default();
@@ -151,10 +142,17 @@ fn main() {
     let mut tail_7 = Point::default();
     let mut tail_8 = Point::default();
     let mut tail_9 = Point::default();
-    let mut seen: HashSet<Point> = [tail_9].into();
+    let mut part2_seen: HashSet<Point> = [tail_9].into();
 
     for motion in input.lines().map(Motion::from) {
-        for head in head.apply(motion) {
+        // Part 1
+        for head in part1_head.apply(motion) {
+            part1_tail.follow(head);
+            part1_seen.insert(part1_tail);
+        }
+
+        // Part 2
+        for head in part2_head.apply(motion) {
             tail_1.follow(head);
             tail_2.follow(tail_1);
             tail_3.follow(tail_2);
@@ -164,9 +162,10 @@ fn main() {
             tail_7.follow(tail_6);
             tail_8.follow(tail_7);
             tail_9.follow(tail_8);
-            seen.insert(tail_9);
+            part2_seen.insert(tail_9);
         }
     }
 
-    println!("part2 = {}", seen.len());
+    println!("part1 = {}", part1_seen.len());
+    println!("part2 = {}", part2_seen.len());
 }
