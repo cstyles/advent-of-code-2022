@@ -140,4 +140,34 @@ fn main() {
     }
 
     println!("part1 = {}", seen.len());
+
+    let mut head = Point::default();
+    let mut tail_1 = Point::default();
+    let mut tail_2 = Point::default();
+    let mut tail_3 = Point::default();
+    let mut tail_4 = Point::default();
+    let mut tail_5 = Point::default();
+    let mut tail_6 = Point::default();
+    let mut tail_7 = Point::default();
+    let mut tail_8 = Point::default();
+    let mut tail_9 = Point::default();
+    let mut seen: HashSet<Point> = [tail_9].into();
+
+    for motion in input.lines().map(Motion::from) {
+        for new_head in head.apply(motion) {
+            head = new_head;
+            tail_1.follow(head);
+            tail_2.follow(tail_1);
+            tail_3.follow(tail_2);
+            tail_4.follow(tail_3);
+            tail_5.follow(tail_4);
+            tail_6.follow(tail_5);
+            tail_7.follow(tail_6);
+            tail_8.follow(tail_7);
+            tail_9.follow(tail_8);
+            seen.insert(tail_9);
+        }
+    }
+
+    println!("part2 = {}", seen.len());
 }
