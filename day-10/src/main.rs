@@ -73,16 +73,10 @@ struct Point {
 
 impl Point {
     fn advance(&mut self) {
-        self.column += 1;
+        self.column = (self.column + 1) % Screen::WIDTH;
 
-        // TODO: ugh
-        if self.column >= 40 {
-            self.column = 0;
-            self.row += 1;
-
-            if self.row >= 6 {
-                self.row = 0;
-            }
+        if self.column == 0 {
+            self.row = (self.row + 1) % Screen::HEIGHT;
         }
     }
 
