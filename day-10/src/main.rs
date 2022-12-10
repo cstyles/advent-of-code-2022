@@ -23,6 +23,45 @@ impl From<&str> for Instruction {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+struct Screen {
+    grid: [[bool; 40]; 6],
+    pixel_being_drawn: Point,
+}
+
+impl Screen {
+    fn advance(&mut self) {
+        self.pixel_being_drawn.advance();
+    }
+
+    fn draw(&mut self, sprite_position: i32) {
+        self.grid[self.pixel_being_drawn.row][self.pixel_being_drawn.column] =
+            self.pixel_being_drawn.in_range(sprite_position);
+        self.advance();
+    }
+
+    fn print(&self) {
+        for row in self.grid {
+            for pixel in row {
+                match pixel {
+                    true => print!("#"),
+                    false => print!("."),
+                };
+            }
+            println!();
+        }
+    }
+}
+
+impl Default for Screen {
+    fn default() -> Self {
+        Self {
+            grid: [[false; 40]; 6],
+            pixel_being_drawn: Point::default(),
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy)]
 struct Point {
     row: usize,
@@ -60,9 +99,7 @@ fn main() {
     let mut clock = 0;
     let mut x = 1;
     let mut signal_strengths = vec![];
-
-    let mut screen = [[false; 40]; 6];
-    let mut pixel_being_drawn = Point::default();
+    let mut screen = Screen::default();
 
     for instruction in instructions {
         for _ in 0..instruction.cycles() {
@@ -71,8 +108,7 @@ fn main() {
                 signal_strengths.push(x * clock);
             }
 
-            screen[pixel_being_drawn.row][pixel_being_drawn.column] = pixel_being_drawn.in_range(x);
-            pixel_being_drawn.advance();
+            screen.draw(x);
         }
 
         if let Instruction::Add(v) = instruction {
@@ -83,17 +119,5 @@ fn main() {
     let part1: i32 = signal_strengths.into_iter().sum();
     println!("part1 = {part1}");
 
-    draw(screen);
-}
-
-fn draw(screen: [[bool; 40]; 6]) {
-    for row in screen {
-        for pixel in row {
-            match pixel {
-                true => print!("#"),
-                false => print!("."),
-            };
-        }
-        println!();
-    }
+    screen.print();
 }
