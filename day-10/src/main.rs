@@ -25,11 +25,14 @@ impl From<&str> for Instruction {
 
 #[derive(Debug, Clone, Copy)]
 struct Screen {
-    grid: [[bool; 40]; 6],
+    grid: [[bool; Self::WIDTH]; Self::HEIGHT],
     pixel_being_drawn: Point,
 }
 
 impl Screen {
+    const WIDTH: usize = 40;
+    const HEIGHT: usize = 6;
+
     fn advance(&mut self) {
         self.pixel_being_drawn.advance();
     }
@@ -56,7 +59,7 @@ impl Screen {
 impl Default for Screen {
     fn default() -> Self {
         Self {
-            grid: [[false; 40]; 6],
+            grid: [[false; Self::WIDTH]; Self::HEIGHT],
             pixel_being_drawn: Point::default(),
         }
     }
