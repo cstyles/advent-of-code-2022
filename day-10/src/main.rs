@@ -47,8 +47,8 @@ impl Screen {
         for row in self.grid {
             for pixel in row {
                 match pixel {
-                    true => print!("#"),
-                    false => print!("."),
+                    true => print!("█"),
+                    false => print!(" "),
                 };
             }
             println!();
