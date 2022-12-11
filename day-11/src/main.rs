@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::num::ParseIntError;
 use std::str::{FromStr, Lines};
 
@@ -170,7 +169,7 @@ fn main() {
     };
 
     let mut monkeys: Vec<Monkey> = input.split("\n\n").map(Monkey::from).collect();
-    let mut counts: HashMap<usize, usize> = HashMap::with_capacity(monkeys.len());
+    let mut counts = vec![0; monkeys.len()];
 
     let big_boy: u64 = monkeys
         .iter()
@@ -182,10 +181,7 @@ fn main() {
         for m in 0..monkeys.len() {
             let moves: Vec<_> = monkeys[m].turn(big_boy).collect();
 
-            counts
-                .entry(m)
-                .and_modify(|x| *x += moves.len())
-                .or_insert(moves.len());
+            counts[m] += moves.len();
 
             for (to, item) in moves {
                 monkeys[to].items.push(item);
@@ -193,7 +189,6 @@ fn main() {
         }
     }
 
-    let mut counts: Vec<usize> = counts.values().copied().collect();
     counts.sort();
     let part1: usize = counts.into_iter().rev().take(2).product();
     println!("part1 = {part1}");
