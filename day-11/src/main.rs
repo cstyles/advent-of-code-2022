@@ -1,5 +1,5 @@
 use std::num::ParseIntError;
-use std::str::{FromStr, Lines};
+use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone)]
 struct Operation {
@@ -68,8 +68,8 @@ struct Test {
     false_monkey: usize,
 }
 
-impl From<Lines<'_>> for Test {
-    fn from(input: Lines) -> Self {
+impl<'a, T: Iterator<Item = &'a str>> From<T> for Test {
+    fn from(input: T) -> Self {
         let mut lines = input.map(get_number_at_end);
         let divisible_by = lines.next().unwrap();
         let true_monkey = lines.next().unwrap() as usize;
@@ -110,7 +110,6 @@ impl FromStr for Item {
 
 #[derive(Debug, Clone)]
 struct Monkey {
-    number: u64,
     items: Vec<Item>,
     operation: Operation,
     test: Test,
@@ -118,15 +117,7 @@ struct Monkey {
 
 impl From<&str> for Monkey {
     fn from(input: &str) -> Self {
-        let mut lines = input.lines();
-        let number: u64 = lines
-            .next()
-            .unwrap()
-            .chars()
-            .nth(7)
-            .unwrap()
-            .to_digit(10)
-            .unwrap() as u64;
+        let mut lines = input.lines().skip(1);
 
         let (_rest, items) = lines.next().unwrap().split_once(": ").unwrap();
         let items = items.split(", ").map(|n| n.parse().unwrap()).collect();
@@ -137,7 +128,6 @@ impl From<&str> for Monkey {
         let test = Test::from(lines);
 
         Self {
-            number,
             items,
             operation,
             test,
