@@ -147,14 +147,15 @@ impl From<&str> for Monkey {
 }
 
 impl Monkey {
-    fn turn(&mut self) -> impl Iterator<Item = (usize, Item)> + '_ {
+    fn turn(&mut self, big_boy: u64) -> impl Iterator<Item = (usize, Item)> + '_ {
         std::iter::from_fn(move || {
             if self.items.is_empty() {
                 None
             } else {
                 let item = self.items.remove(0);
                 let new_item = self.operation.apply(item);
-                let new_item = Item(new_item.0 / 3);
+                // let new_item = Item(new_item.0 / 3);
+                let new_item = Item(new_item.0 % big_boy);
                 Some((self.test.which_monkey(&new_item), new_item))
             }
         })
@@ -171,10 +172,15 @@ fn main() {
     let mut monkeys: Vec<Monkey> = input.split("\n\n").map(Monkey::from).collect();
     let mut counts: HashMap<usize, usize> = HashMap::with_capacity(monkeys.len());
 
+    let big_boy: u64 = monkeys
+        .iter()
+        .map(|monkey| monkey.test.divisible_by)
+        .product();
+
     // Rounds
-    for _ in 0..20 {
+    for _ in 0..10_000 {
         for m in 0..monkeys.len() {
-            let moves: Vec<_> = monkeys[m].turn().collect();
+            let moves: Vec<_> = monkeys[m].turn(big_boy).collect();
 
             counts
                 .entry(m)
