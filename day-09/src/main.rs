@@ -128,29 +128,19 @@ fn main() {
     }
     .unwrap();
 
-    let mut part1_head = Point::default();
-    let mut part1_tail = Point::default();
-    let mut part1_seen: HashSet<Point> = [part1_tail].into();
-
-    let mut part2_head = Point::default();
+    let mut head = Point::default();
     let mut tails = [Point::default(); 9];
+    let mut part1_seen: HashSet<Point> = [Point::default()].into();
     let mut part2_seen: HashSet<Point> = [Point::default()].into();
 
     for motion in input.lines().map(Motion::from) {
-        // Part 1
-        for head in part1_head.apply(motion) {
-            part1_tail.follow(head);
-            part1_seen.insert(part1_tail);
-        }
-
-        // Part 2
-        for head in part2_head.apply(motion) {
+        for head in head.apply(motion) {
             tails[0].follow(head);
-
             for i in 1..tails.len() {
                 tails[i].follow(tails[i - 1]);
             }
 
+            part1_seen.insert(tails[0]);
             part2_seen.insert(tails[8]);
         }
     }
