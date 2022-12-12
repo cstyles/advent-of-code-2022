@@ -136,15 +136,14 @@ impl From<&str> for Monkey {
 }
 
 impl Monkey {
-    fn turn(&mut self, big_boy: u64) -> impl Iterator<Item = (usize, Item)> + '_ {
+    fn turn<P: Relief>(&mut self, big_boy: u64) -> impl Iterator<Item = (usize, Item)> + '_ {
         std::iter::from_fn(move || {
             if self.items.is_empty() {
                 None
             } else {
                 let item = self.items.remove(0);
                 let new_item = self.operation.apply(item);
-                // let new_item = Item(new_item.0 / 3);
-                let new_item = Item(new_item.0 % big_boy);
+                let new_item = P::relief(new_item, big_boy);
                 Some((self.test.which_monkey(&new_item), new_item))
             }
         })
@@ -158,28 +157,64 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let mut monkeys: Vec<Monkey> = input.split("\n\n").map(Monkey::from).collect();
-    let mut counts = vec![0; monkeys.len()];
+    let mut part1_monkeys: Vec<Monkey> = input.split("\n\n").map(Monkey::from).collect();
+    let mut part1_counts = vec![0; part1_monkeys.len()];
+    let mut part2_monkeys = part1_monkeys.clone();
+    let mut part2_counts = part1_counts.clone();
 
-    let big_boy: u64 = monkeys
+    let big_boy: u64 = part1_monkeys
         .iter()
         .map(|monkey| monkey.test.divisible_by)
         .product();
 
-    // Rounds
-    for _ in 0..10_000 {
-        for m in 0..monkeys.len() {
-            let moves: Vec<_> = monkeys[m].turn(big_boy).collect();
+    for _ in 0..20 {
+        for m in 0..part1_monkeys.len() {
+            let moves: Vec<_> = part1_monkeys[m].turn::<Part1>(big_boy).collect();
 
-            counts[m] += moves.len();
+            part1_counts[m] += moves.len();
 
             for (to, item) in moves {
-                monkeys[to].items.push(item);
+                part1_monkeys[to].items.push(item);
             }
         }
     }
 
-    counts.sort();
-    let part1: usize = counts.into_iter().rev().take(2).product();
+    part1_counts.sort();
+    let part1: usize = part1_counts.into_iter().rev().take(2).product();
     println!("part1 = {part1}");
+
+    for _ in 0..10_000 {
+        for m in 0..part2_monkeys.len() {
+            let moves: Vec<_> = part2_monkeys[m].turn::<Part2>(big_boy).collect();
+
+            part2_counts[m] += moves.len();
+
+            for (to, item) in moves {
+                part2_monkeys[to].items.push(item);
+            }
+        }
+    }
+
+    part2_counts.sort();
+    let part2: usize = part2_counts.into_iter().rev().take(2).product();
+    println!("part2 = {part2}");
+}
+
+trait Relief {
+    fn relief(item: Item, big_boy: u64) -> Item;
+}
+
+struct Part1;
+struct Part2;
+
+impl Relief for Part1 {
+    fn relief(item: Item, _big_boy: u64) -> Item {
+        Item(item.0 / 3)
+    }
+}
+
+impl Relief for Part2 {
+    fn relief(item: Item, big_boy: u64) -> Item {
+        Item(item.0 % big_boy)
+    }
 }
