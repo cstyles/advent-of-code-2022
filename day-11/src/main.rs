@@ -136,17 +136,15 @@ impl From<&str> for Monkey {
 }
 
 impl Monkey {
-    fn turn<P: Relief>(&mut self, big_boy: u64) -> impl Iterator<Item = (usize, Item)> + '_ {
-        std::iter::from_fn(move || {
-            if self.items.is_empty() {
-                None
-            } else {
-                let item = self.items.remove(0);
-                let new_item = self.operation.apply(item);
-                let new_item = P::relief(new_item, big_boy);
-                Some((self.test.which_monkey(&new_item), new_item))
-            }
-        })
+    fn turn<P: Relief>(&mut self, big_boy: u64) -> Vec<(usize, Item)> {
+        let items = std::mem::take(&mut self.items);
+
+        items
+            .into_iter()
+            .map(|item| self.operation.apply(item))
+            .map(|item| P::relief(item, big_boy))
+            .map(|item| (self.test.which_monkey(&item), item))
+            .collect()
     }
 }
 
@@ -169,7 +167,7 @@ fn main() {
 
     for _ in 0..20 {
         for m in 0..part1_monkeys.len() {
-            let moves: Vec<_> = part1_monkeys[m].turn::<Part1>(big_boy).collect();
+            let moves: Vec<_> = part1_monkeys[m].turn::<Part1>(big_boy);
 
             part1_counts[m] += moves.len();
 
@@ -185,7 +183,7 @@ fn main() {
 
     for _ in 0..10_000 {
         for m in 0..part2_monkeys.len() {
-            let moves: Vec<_> = part2_monkeys[m].turn::<Part2>(big_boy).collect();
+            let moves: Vec<_> = part2_monkeys[m].turn::<Part2>(big_boy);
 
             part2_counts[m] += moves.len();
 
