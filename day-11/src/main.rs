@@ -136,13 +136,13 @@ impl From<&str> for Monkey {
 }
 
 impl Monkey {
-    fn turn<P: Relief>(&mut self, big_boy: u64) -> Vec<(usize, Item)> {
+    fn turn<P: Relief>(&mut self, modulo: u64) -> Vec<(usize, Item)> {
         let items = std::mem::take(&mut self.items);
 
         items
             .into_iter()
             .map(|item| self.operation.apply(item))
-            .map(|item| P::relief(item, big_boy))
+            .map(|item| P::relief(item, modulo))
             .map(|item| (self.test.which_monkey(&item), item))
             .collect()
     }
@@ -160,14 +160,15 @@ fn main() {
     let mut part2_monkeys = part1_monkeys.clone();
     let mut part2_counts = part1_counts.clone();
 
-    let big_boy: u64 = part1_monkeys
+    // Multiply all of the divisors to get a big modulo to use
+    let modulo: u64 = part1_monkeys
         .iter()
         .map(|monkey| monkey.test.divisible_by)
         .product();
 
     for _ in 0..20 {
         for m in 0..part1_monkeys.len() {
-            let moves: Vec<_> = part1_monkeys[m].turn::<Part1>(big_boy);
+            let moves: Vec<_> = part1_monkeys[m].turn::<Part1>(modulo);
 
             part1_counts[m] += moves.len();
 
@@ -183,7 +184,7 @@ fn main() {
 
     for _ in 0..10_000 {
         for m in 0..part2_monkeys.len() {
-            let moves: Vec<_> = part2_monkeys[m].turn::<Part2>(big_boy);
+            let moves: Vec<_> = part2_monkeys[m].turn::<Part2>(modulo);
 
             part2_counts[m] += moves.len();
 
@@ -199,20 +200,20 @@ fn main() {
 }
 
 trait Relief {
-    fn relief(item: Item, big_boy: u64) -> Item;
+    fn relief(item: Item, modulo: u64) -> Item;
 }
 
 struct Part1;
 struct Part2;
 
 impl Relief for Part1 {
-    fn relief(item: Item, _big_boy: u64) -> Item {
+    fn relief(item: Item, _modulo: u64) -> Item {
         Item(item.0 / 3)
     }
 }
 
 impl Relief for Part2 {
-    fn relief(item: Item, big_boy: u64) -> Item {
-        Item(item.0 % big_boy)
+    fn relief(item: Item, modulo: u64) -> Item {
+        Item(item.0 % modulo)
     }
 }
