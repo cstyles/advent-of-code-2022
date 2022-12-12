@@ -1,6 +1,3 @@
-use std::num::ParseIntError;
-use std::str::FromStr;
-
 #[derive(Debug, Copy, Clone)]
 struct Operation {
     op: Op,
@@ -22,10 +19,10 @@ impl From<&str> for Operation {
 impl Operation {
     fn apply(&self, item: Item) -> Item {
         match (self.op, self.term) {
-            (Op::Add, Term::Literal(literal)) => Item(item.0 + literal),
-            (Op::Add, Term::Old) => Item(item.0 + item.0),
-            (Op::Mul, Term::Literal(literal)) => Item(item.0 * literal),
-            (Op::Mul, Term::Old) => Item(item.0 * item.0),
+            (Op::Add, Term::Literal(literal)) => item + literal,
+            (Op::Add, Term::Old) => item + item,
+            (Op::Mul, Term::Literal(literal)) => item * literal,
+            (Op::Mul, Term::Old) => item * item,
         }
     }
 }
@@ -85,7 +82,7 @@ impl<'a, T: Iterator<Item = &'a str>> From<T> for Test {
 
 impl Test {
     fn which_monkey(&self, item: &Item) -> usize {
-        if item.0 % self.divisible_by == 0 {
+        if item % self.divisible_by == 0 {
             self.true_monkey
         } else {
             self.false_monkey
@@ -97,16 +94,7 @@ fn get_number_at_end(string: &str) -> u64 {
     string.rsplit_once(' ').unwrap().1.parse().unwrap()
 }
 
-#[derive(Debug, Copy, Clone)]
-struct Item(u64);
-
-impl FromStr for Item {
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.parse()?))
-    }
-}
+type Item = u64;
 
 #[derive(Debug, Clone)]
 struct Monkey {
@@ -208,12 +196,12 @@ struct Part2;
 
 impl Relief for Part1 {
     fn relief(item: Item, _modulo: u64) -> Item {
-        Item(item.0 / 3)
+        item / 3
     }
 }
 
 impl Relief for Part2 {
     fn relief(item: Item, modulo: u64) -> Item {
-        Item(item.0 % modulo)
+        item % modulo
     }
 }
