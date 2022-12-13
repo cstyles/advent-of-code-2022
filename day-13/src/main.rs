@@ -112,6 +112,17 @@ fn main() {
         .map(|(a, b)| (Packet::from(a), Packet::from(b)))
         .collect();
 
+    let mut all_packets: Vec<_> = pairs
+        .clone()
+        .into_iter()
+        .flat_map(|(a, b)| [a, b])
+        .collect();
+
+    let two = Packet::List(vec![Packet::List(vec![Packet::Number(2)])]);
+    let six = Packet::List(vec![Packet::List(vec![Packet::Number(6)])]);
+    all_packets.push(two.clone());
+    all_packets.push(six.clone());
+
     let orderings = pairs.into_iter().map(|(a, b)| a.cmp(&b));
 
     let part1: u32 = (1..)
@@ -121,4 +132,19 @@ fn main() {
         .sum();
 
     println!("part1 = {part1}");
+
+    all_packets.sort();
+
+    let two_index = (1..)
+        .zip(all_packets.iter())
+        .find(|(_, packet)| **packet == two)
+        .map(|(i, _)| i)
+        .unwrap();
+    let six_index = (1..)
+        .zip(all_packets.iter())
+        .find(|(_, packet)| **packet == six)
+        .map(|(i, _)| i)
+        .unwrap();
+
+    println!("part2 = {}", two_index * six_index);
 }
