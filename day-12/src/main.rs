@@ -89,11 +89,11 @@ fn main() {
 
     let mut heap: BinaryHeap<Node> = BinaryHeap::with_capacity(rows * columns);
     let mut distances = vec![vec![u32::MAX; columns]; rows];
-    distances[start.y as usize][start.x as usize] = 0;
+    distances[end.y as usize][end.x as usize] = 0;
 
-    // Set distance of start node to 0
+    // Set distance of "start" node to 0
     heap.push(Node {
-        point: start,
+        point: end,
         distance: 0,
     });
 
@@ -102,7 +102,7 @@ fn main() {
 
         for neighbor_point in current.point.neighbors(&grid) {
             let neighbor_height = lookup(neighbor_point, &grid);
-            if neighbor_height - current_height > 1 {
+            if neighbor_height - current_height < -1 {
                 // Too tall to climb from here
                 continue;
             }
@@ -121,13 +121,22 @@ fn main() {
 
             heap.push(neighbor_node);
 
-            if neighbor_point == end {
-                break 'wow;
+            if neighbor_point == start {
+                break 'top;
             }
         }
     }
 
-    println!("part1 = {}", distances[end.y as usize][end.x as usize]);
+    println!("part1 = {}", distances[start.y as usize][start.x as usize]);
+
+    let mut starting_points = find_all(1, &grid);
+    starting_points.push(start);
+    let part2 = starting_points
+        .into_iter()
+        .map(|point| lookup(point, &distances))
+        .min()
+        .unwrap();
+    println!("part2 = {part2}");
 }
 
 fn height(c: char) -> i8 {
@@ -148,6 +157,20 @@ fn find(target: i8, grid: &[Vec<i8>]) -> Point {
     }
 
     unreachable!("target ({}) not found", target);
+}
+
+fn find_all(target: i8, grid: &[Vec<i8>]) -> Vec<Point> {
+    let mut points = vec![];
+
+    for (row_number, row) in grid.iter().enumerate() {
+        for (column_number, column) in row.iter().enumerate() {
+            if *column == target {
+                points.push(Point::new_usize(row_number, column_number));
+            }
+        }
+    }
+
+    points
 }
 
 fn lookup<T>(point: Point, grid: &[Vec<T>]) -> &T {
