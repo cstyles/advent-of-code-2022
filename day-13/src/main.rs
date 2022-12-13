@@ -111,16 +111,16 @@ fn main() {
 
     all_packets.sort();
 
-    let two_index = (1..)
-        .zip(all_packets.iter())
-        .find(|(_, packet)| **packet == two)
-        .map(|(i, _)| i)
-        .unwrap();
-    let six_index = (1..)
-        .zip(all_packets.iter())
-        .find(|(_, packet)| **packet == six)
-        .map(|(i, _)| i)
-        .unwrap();
+    let two_index = all_packets
+        .iter()
+        .position(|packet| *packet == two)
+        .unwrap()
+        + 1;
+    let six_index = all_packets
+        .iter()
+        .position(|packet| *packet == six)
+        .unwrap()
+        + 1;
 
     println!("part2 = {}", two_index * six_index);
 }
