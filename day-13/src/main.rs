@@ -67,22 +67,7 @@ impl Ord for Packet {
             (Packet::Number(a), Packet::Number(b)) => a.cmp(b),
             (Packet::Number(_), Packet::List(_)) => self.wrap_in_list().cmp(other),
             (Packet::List(_), Packet::Number(_)) => self.cmp(&other.wrap_in_list()),
-            (Packet::List(left), Packet::List(right)) => {
-                let mut left = left.iter();
-                let mut right = right.iter();
-
-                loop {
-                    match (left.next(), right.next()) {
-                        (None, None) => return Ordering::Equal,      // Equal lengths
-                        (None, Some(_)) => return Ordering::Less,    // Left ran out first
-                        (Some(_), None) => return Ordering::Greater, // Right ran out first
-                        (Some(a), Some(b)) => match a.cmp(b) {
-                            Ordering::Equal => continue,
-                            ordering => return ordering,
-                        },
-                    }
-                }
-            }
+            (Packet::List(left), Packet::List(right)) => left.cmp(right),
         }
     }
 }
