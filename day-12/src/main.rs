@@ -77,6 +77,22 @@ fn main() {
     let start = find(0, &grid);
     let end = find(27, &grid);
 
+    let distances = dijkstra(start, end, &grid);
+
+    println!("part1 = {}", distances[start.y][start.x]);
+
+    let mut starting_points = find_all(1, &grid);
+    starting_points.push(start);
+    let part2 = starting_points
+        .into_iter()
+        .map(|point| lookup(point, &distances))
+        .min()
+        .unwrap();
+    println!("part2 = {part2}");
+}
+
+// Find the distances from the *end* to the *start*
+fn dijkstra(start: Point, end: Point, grid: &[Vec<i8>]) -> Vec<Vec<u32>> {
     let rows = grid.len();
     let columns = grid[0].len();
 
@@ -90,11 +106,11 @@ fn main() {
         distance: 0,
     });
 
-    'top: while let Some(current) = heap.pop() {
-        let current_height = lookup(current.point, &grid);
+    while let Some(current) = heap.pop() {
+        let current_height = lookup(current.point, grid);
 
-        for neighbor_point in current.point.neighbors(&grid) {
-            let neighbor_height = lookup(neighbor_point, &grid);
+        for neighbor_point in current.point.neighbors(grid) {
+            let neighbor_height = lookup(neighbor_point, grid);
             if neighbor_height - current_height < -1 {
                 // Too tall to climb from here
                 continue;
@@ -115,21 +131,12 @@ fn main() {
             heap.push(neighbor_node);
 
             if neighbor_point == start {
-                break 'top;
+                return distances;
             }
         }
     }
 
-    println!("part1 = {}", distances[start.y][start.x]);
-
-    let mut starting_points = find_all(1, &grid);
-    starting_points.push(start);
-    let part2 = starting_points
-        .into_iter()
-        .map(|point| lookup(point, &distances))
-        .min()
-        .unwrap();
-    println!("part2 = {part2}");
+    distances
 }
 
 fn height(c: char) -> i8 {
