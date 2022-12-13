@@ -111,25 +111,30 @@ fn dijkstra(start: Point, end: Point, grid: &[Vec<i8>]) -> Vec<Vec<u32>> {
 
         for neighbor_point in current.point.neighbors(grid) {
             let neighbor_height = lookup(neighbor_point, grid);
-            if neighbor_height - current_height < -1 {
+            if current_height - neighbor_height > 1 {
                 // Too tall to climb from here
                 continue;
             }
 
             let existing_distance = lookup(neighbor_point, &distances);
+            let distance_from_here = current.distance + 1;
+
+            if distance_from_here < *existing_distance {
+                // Update with shorter distance
+                *lookup_mut(neighbor_point, &mut distances) = distance_from_here
+            } else {
+                // There exists a shorter path, try next neighbor
+                continue;
+            }
+
+            // Explore this neighbor later
             let neighbor_node = Node {
                 point: neighbor_point,
                 distance: current.distance + 1,
             };
-
-            if neighbor_node.distance < *existing_distance {
-                *lookup_mut(neighbor_point, &mut distances) = neighbor_node.distance;
-            } else {
-                continue;
-            }
-
             heap.push(neighbor_node);
 
+            // Exit early if we found the node we wanted to reach
             if neighbor_point == start {
                 return distances;
             }
