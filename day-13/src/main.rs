@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::iter::Peekable;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Packet {
@@ -8,54 +9,44 @@ enum Packet {
 
 impl From<&str> for Packet {
     fn from(input: &str) -> Self {
-        let (open_bracket, input) = input.split_at(1);
-        debug_assert_eq!("[", open_bracket);
+        let mut chars = input.chars().peekable();
+        debug_assert_eq!(Some('['), chars.next());
 
-        let (unparsed, packet) = parse_list(input);
-        debug_assert!(unparsed.is_empty());
+        let (unparsed, packet) = parse_list(chars);
+        debug_assert_eq!(0, unparsed.count());
 
         packet
     }
 }
 
-fn parse_number(c: &str) -> Packet {
-    Packet::Number(c.parse().unwrap())
-}
-
-fn parse_list(input: &str) -> (&str, Packet) {
+fn parse_list<I: Iterator<Item = char>>(mut chars: Peekable<I>) -> (Peekable<I>, Packet) {
     let mut list = vec![];
-    let (mut _first, mut rest) = ("", input);
 
-    while !rest.is_empty() {
-        let split = rest.split_at(1);
-        let first = split.0;
-        rest = split.1;
-
-        match first {
-            "," => continue,
-            "]" => break,
-            "[" => {
-                let result = parse_list(rest);
-                rest = result.0;
+    while let Some(c) = chars.next() {
+        match c {
+            ',' => continue,
+            ']' => break,
+            '[' => {
+                let result = parse_list(chars);
+                chars = result.0;
                 list.push(result.1);
             }
-            s => {
-                let next = rest.chars().next().unwrap();
-                match next.to_digit(10) {
-                    None => list.push(parse_number(s)),
-                    Some(digit) => {
-                        // Combine the two digits into a single number
-                        let tens: u32 = s.parse().unwrap();
-                        let num = tens * 10 + digit;
-                        let packet = Packet::Number(num);
-                        list.push(packet);
-                    }
-                }
+            c => {
+                let first_digit = c.to_digit(10).unwrap();
+                let number = if chars.peek().unwrap().is_ascii_digit() {
+                    let second_digit = chars.next().unwrap().to_digit(10).unwrap();
+                    first_digit * 10 + second_digit
+                } else {
+                    first_digit
+                };
+
+                let packet = Packet::Number(number);
+                list.push(packet);
             }
         }
     }
 
-    (rest, Packet::List(list))
+    (chars, Packet::List(list))
 }
 
 impl Packet {
