@@ -20,6 +20,19 @@ impl From<&str> for Motion {
     }
 }
 
+impl Iterator for Motion {
+    type Item = Direction;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.steps == 0 {
+            None
+        } else {
+            self.steps -= 1;
+            Some(self.direction)
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 enum Direction {
     Left,
@@ -75,27 +88,13 @@ impl Point {
         }
     }
 
-    fn shift(&self, direction: Direction) -> Self {
-        match direction {
+    fn shift(&mut self, direction: Direction) {
+        *self = match direction {
             Left => self.left(),
             Right => self.right(),
             Up => self.up(),
             Down => self.down(),
         }
-    }
-
-    fn apply(&mut self, motion: Motion) -> impl Iterator<Item = Self> + '_ {
-        let mut step = 0;
-
-        std::iter::from_fn(move || {
-            step += 1;
-            if step > motion.steps {
-                None
-            } else {
-                *self = self.shift(motion.direction);
-                Some(*self)
-            }
-        })
     }
 
     fn follow(&mut self, head: Self) {
@@ -135,7 +134,8 @@ fn main() {
     let mut part2_seen: HashSet<Point> = [Point::default()].into();
 
     for motion in input.lines().map(Motion::from) {
-        for head in head.apply(motion) {
+        for direction in motion {
+            head.shift(direction);
             tails[0].follow(head);
             for i in 1..tails.len() {
                 tails[i].follow(tails[i - 1]);
