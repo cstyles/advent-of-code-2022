@@ -99,11 +99,8 @@ impl Point {
     }
 
     fn follow(&mut self, head: Self) {
-        let x_diff = (head.x - self.x).abs();
-        let y_diff = (head.y - self.y).abs();
-
-        if x_diff <= 1 && y_diff <= 1 {
-            // Don't do anything if the tail is already adjacent
+        // Don't do anything if the tail is already adjacent
+        if self.adjacent(&head) {
             return;
         }
 
@@ -118,6 +115,10 @@ impl Point {
             (Ordering::Greater, Ordering::Equal) => self.right(),
             (Ordering::Greater, Ordering::Greater) => self.up().right(),
         };
+    }
+
+    fn adjacent(&self, other: &Self) -> bool {
+        self.x.abs_diff(other.x) <= 1 && self.y.abs_diff(other.y) <= 1
     }
 }
 
