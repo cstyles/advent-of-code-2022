@@ -3,38 +3,31 @@ use std::ops::Add;
 
 #[derive(Debug, Default, Clone, Copy, Hash, PartialEq, Eq)]
 struct Point {
-    x: isize,
-    y: isize,
+    x: usize,
+    y: usize,
 }
 
 impl Point {
-    fn new(y: isize, x: isize) -> Self {
+    fn new(y: usize, x: usize) -> Self {
         Self { x, y }
     }
 
-    fn new_usize(y: usize, x: usize) -> Self {
-        Self {
-            x: x as isize,
-            y: y as isize,
-        }
-    }
-
     fn in_bounds(&self, grid: &[Vec<i8>]) -> bool {
-        let rows = grid.len() as isize;
-        let columns = grid[0].len() as isize;
+        let rows = grid.len();
+        let columns = grid[0].len();
 
-        (self.y >= 0 && self.y < rows) && (self.x >= 0 && self.x < columns)
+        self.y < rows && self.x < columns
     }
 
     fn neighbors(self, grid: &[Vec<i8>]) -> impl Iterator<Item = Point> + '_ {
         [
-            Point::new(-1, 0),
-            Point::new(1, 0),
-            Point::new(0, -1),
-            Point::new(0, 1),
+            self.y.checked_sub(1).map(|y| Point::new(y, self.x)),
+            Some(self + Point::new(1, 0)),
+            self.x.checked_sub(1).map(|x| Point::new(self.y, x)),
+            Some(self + Point::new(0, 1)),
         ]
         .into_iter()
-        .map(move |diff| self + diff)
+        .flatten()
         .filter(|point| point.in_bounds(grid))
     }
 }
@@ -89,7 +82,7 @@ fn main() {
 
     let mut heap: BinaryHeap<Node> = BinaryHeap::with_capacity(rows * columns);
     let mut distances = vec![vec![u32::MAX; columns]; rows];
-    distances[end.y as usize][end.x as usize] = 0;
+    distances[end.y][end.x] = 0;
 
     // Set distance of "start" node to 0
     heap.push(Node {
@@ -127,7 +120,7 @@ fn main() {
         }
     }
 
-    println!("part1 = {}", distances[start.y as usize][start.x as usize]);
+    println!("part1 = {}", distances[start.y][start.x]);
 
     let mut starting_points = find_all(1, &grid);
     starting_points.push(start);
@@ -151,7 +144,7 @@ fn find(target: i8, grid: &[Vec<i8>]) -> Point {
     for (row_number, row) in grid.iter().enumerate() {
         for (column_number, column) in row.iter().enumerate() {
             if *column == target {
-                return Point::new_usize(row_number, column_number);
+                return Point::new(row_number, column_number);
             }
         }
     }
@@ -165,7 +158,7 @@ fn find_all(target: i8, grid: &[Vec<i8>]) -> Vec<Point> {
     for (row_number, row) in grid.iter().enumerate() {
         for (column_number, column) in row.iter().enumerate() {
             if *column == target {
-                points.push(Point::new_usize(row_number, column_number));
+                points.push(Point::new(row_number, column_number));
             }
         }
     }
@@ -174,11 +167,11 @@ fn find_all(target: i8, grid: &[Vec<i8>]) -> Vec<Point> {
 }
 
 fn lookup<T>(point: Point, grid: &[Vec<T>]) -> &T {
-    &grid[point.y as usize][point.x as usize]
+    &grid[point.y][point.x]
 }
 
 fn lookup_mut<T>(point: Point, grid: &mut [Vec<T>]) -> &mut T {
-    &mut grid[point.y as usize][point.x as usize]
+    &mut grid[point.y][point.x]
 }
 
 #[allow(unused)]
