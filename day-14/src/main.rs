@@ -101,7 +101,7 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let mut grid = vec![vec![Air; 600]; 200];
+    let mut grid = vec![vec![Air; 700]; 200];
     let paths = input
         .lines()
         .map(|line| line.split(" -> ").map(Point::from));
@@ -111,13 +111,37 @@ fn main() {
     }
 
     let abyss = find_lowest_rock(&grid);
+    part1(grid.clone(), abyss);
+    part2(grid, abyss);
+}
 
+fn part1(mut grid: Vec<Vec<Tile>>, abyss: usize) {
     let mut i = 0;
     while drop_sand(&mut grid, abyss).is_some() {
         i += 1;
     }
 
     println!("part1 = {i}");
+}
+
+fn part2(mut grid: Vec<Vec<Tile>>, abyss: usize) {
+    let abyss = abyss + 2;
+
+    // Draw floor
+    let floor_start = Point { x: 0, y: abyss };
+    let floor_end = Point { x: grid[0].len(), y: abyss };
+    let path = floor_start.between(&floor_end);
+    draw_rocks(&mut grid, path.into_iter());
+
+    let mut i = 0;
+    while let Some(point) = drop_sand(&mut grid, abyss) {
+        i += 1;
+        if point == (Point { x: 500, y: 0 }) {
+            break;
+        }
+    }
+
+    println!("part2 = {i}");
 }
 
 fn draw_rocks(grid: &mut [Vec<Tile>], mut path: impl Iterator<Item = Point>) {
