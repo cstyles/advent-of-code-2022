@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use fnv::FnvHashSet as HashSet;
 
 use itertools::Itertools;
 
