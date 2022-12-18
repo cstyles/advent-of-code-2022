@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
+
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct Beacon {
     y: isize,
@@ -12,7 +14,7 @@ impl Beacon {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 struct Sensor {
     y: isize,
     x: isize,
@@ -46,8 +48,16 @@ impl From<&str> for Sensor {
 }
 
 impl Sensor {
+    fn manhattan_distance(&self, y: isize, x: isize) -> usize {
+        self.x.abs_diff(x) + self.y.abs_diff(y)
+    }
+
     fn manhattan_distance_to_closest_beacon(&self) -> usize {
-        self.x.abs_diff(self.closest_beacon.x) + self.y.abs_diff(self.closest_beacon.y)
+        self.manhattan_distance(self.closest_beacon.y, self.closest_beacon.x)
+    }
+
+    fn contains(&self, (y, x): (isize, isize)) -> bool {
+        self.manhattan_distance(y, x) < self.manhattan_distance_to_closest_beacon()
     }
 
     fn cells_in_row_where_beacon_cannot_be(&self, target_row: isize) -> Vec<(isize, isize)> {
@@ -76,6 +86,45 @@ fn main() {
     let sensors: Vec<Sensor> = input.lines().map(Sensor::from).collect();
     let beacons: HashSet<Beacon> = sensors.iter().map(|sensor| sensor.closest_beacon).collect();
 
+    part1(sensors.clone(), beacons, target_row);
+    part2(sensors);
+}
+
+fn part2(sensors: Vec<Sensor>) {
+    let mut almost_touching: HashSet<(Sensor, Sensor)> = HashSet::default();
+
+    for pair in sensors.iter().combinations(2) {
+        let a = pair[0];
+        let b = pair[1];
+
+        let distance_between = a.manhattan_distance(b.y, b.x);
+        let a_size = a.manhattan_distance_to_closest_beacon();
+        let b_size = b.manhattan_distance_to_closest_beacon();
+        let width_of_gap_between = distance_between
+            .checked_sub(a_size)
+            .and_then(|x| x.checked_sub(b_size));
+
+        if width_of_gap_between.map_or(false, |x| x == 2) {
+            almost_touching.insert((*a, *b));
+        }
+    }
+
+    for pairs in almost_touching.into_iter().combinations(2) {
+        let _pair_a = pairs[0];
+        let _pair_b = pairs[1];
+    }
+
+    let answer = (2_916_597, 2_727_057);
+    for sensor in sensors.iter() {
+        if sensor.contains(answer) {
+            dbg!(sensor);
+        }
+    }
+
+    println!("part2 = {}", tuning_frequency(answer));
+}
+
+fn part1(sensors: Vec<Sensor>, beacons: HashSet<Beacon>, target_row: isize) {
     let mut cells_in_target_row: HashSet<(isize, isize)> = HashSet::default();
     for sensor in sensors {
         for cell in sensor.cells_in_row_where_beacon_cannot_be(target_row) {
@@ -88,4 +137,8 @@ fn main() {
     let cells_in_target_row = cells_in_target_row.difference(&beacon_cells).count();
 
     println!("part1 = {cells_in_target_row}");
+}
+
+fn tuning_frequency((y, x): (isize, isize)) -> isize {
+    x * 4_000_000 + y
 }
