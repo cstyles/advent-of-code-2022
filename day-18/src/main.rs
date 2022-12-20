@@ -79,6 +79,12 @@ impl Point {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum Tile {
+    Air,
+    Rock,
+}
+
 fn main() {
     let input = if std::env::var("TEST").is_ok() {
         include_str!("../test_input.txt")
@@ -88,20 +94,20 @@ fn main() {
 
     let points: HashSet<Point> = input.lines().map(Point::from).collect();
 
-    let mut grid = vec![vec![vec![false; 33]; 33]; 33];
+    let mut grid = vec![vec![vec![Tile::Air; 33]; 33]; 33];
 
     part1(&mut grid, &points);
     part2(&points);
 }
 
-fn part1(grid: &mut [Vec<Vec<bool>>], points: &HashSet<Point>) {
+fn part1(grid: &mut [Vec<Vec<Tile>>], points: &HashSet<Point>) {
     let mut surface_area = 0;
     for point in points {
-        *lookup_mut(grid, *point) = true;
+        *lookup_mut(grid, *point) = Tile::Rock;
         surface_area += 6;
 
         for neighbor in point.neighbors() {
-            if lookup(grid, neighbor) {
+            if lookup(grid, neighbor) == Tile::Rock {
                 surface_area -= 2;
             }
         }
@@ -141,10 +147,10 @@ fn part2(points: &HashSet<Point>) {
     println!("part2 = {surface_area}")
 }
 
-fn lookup(grid: &[Vec<Vec<bool>>], point: Point) -> bool {
+fn lookup(grid: &[Vec<Vec<Tile>>], point: Point) -> Tile {
     grid[(point.z + 10) as usize][(point.y + 10) as usize][(point.x + 10) as usize]
 }
 
-fn lookup_mut(grid: &mut [Vec<Vec<bool>>], point: Point) -> &mut bool {
+fn lookup_mut(grid: &mut [Vec<Vec<Tile>>], point: Point) -> &mut Tile {
     &mut grid[(point.z + 10) as usize][(point.y + 10) as usize][(point.x + 10) as usize]
 }
