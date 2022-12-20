@@ -146,5 +146,5 @@ fn lookup(grid: &[Vec<Vec<bool>>], point: Point) -> bool {
 }
 
 fn lookup_mut(grid: &mut [Vec<Vec<bool>>], point: Point) -> &mut bool {
-    &mut grid[point.z as usize + 10][point.y as usize + 10][point.x as usize + 10]
+    &mut grid[(point.z + 10) as usize][(point.y + 10) as usize][(point.x + 10) as usize]
 }
