@@ -5,7 +5,7 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let numbers: Vec<(usize, i64)> = input
+    let mut numbers: Vec<(usize, i64)> = input
         .lines()
         .map(|line| line.parse().unwrap())
         .enumerate()
@@ -14,10 +14,7 @@ fn main() {
     let part1 = decrypt(numbers.clone(), 1);
     println!("part1 = {part1}");
 
-    let numbers: Vec<_> = numbers
-        .into_iter()
-        .map(|(i, num)| (i, num * 811_589_153))
-        .collect();
+    numbers.iter_mut().for_each(|(_i, num)| *num *= 811_589_153);
     let part2 = decrypt(numbers, 10);
     println!("part2 = {part2}");
 }
