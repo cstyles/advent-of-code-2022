@@ -27,16 +27,12 @@ fn decrypt(mut numbers: Vec<(usize, i64)>, cycles: usize) -> i64 {
         mix(&mut numbers);
     }
 
-    let zero_index = numbers
-        .iter()
-        .position(|(_index, number)| *number == 0)
-        .unwrap();
-
     numbers
         .iter()
         .map(|(_, number)| number)
+        .copied()
         .cycle()
-        .skip(zero_index)
+        .skip_while(|number| *number != 0)
         .step_by(1_000)
         .skip(1)
         .take(3)
