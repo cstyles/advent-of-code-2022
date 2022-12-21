@@ -125,6 +125,15 @@ enum Term {
     Num(u64),
 }
 
+impl std::fmt::Display for Term {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Term::Str(string) => write!(f, "{}", string),
+            Term::Num(number) => write!(f, "{}", number),
+        }
+    }
+}
+
 fn generate_term(monkey: &str, monkeys: &HashMap<&str, Monkey>) -> Term {
     match monkeys.get(monkey).unwrap() {
         Monkey::Number(number) => Term::Num(*number),
@@ -136,17 +145,12 @@ fn generate_term(monkey: &str, monkeys: &HashMap<&str, Monkey>) -> Term {
             let a = generate_term(a, monkeys);
             let b = generate_term(b, monkeys);
 
-            match (a, b) {
-                (Term::Str(a), Term::Num(b)) => {
+            match (&a, &b) {
+                (Term::Str(_), _) | (_, Term::Str(_)) => {
                     let operation = operation.to_char();
                     Term::Str(format!("({a} {operation} {b})"))
                 }
-                (Term::Num(a), Term::Str(b)) => {
-                    let operation = operation.to_char();
-                    Term::Str(format!("({a} {operation} {b})"))
-                }
-                (Term::Num(a), Term::Num(b)) => Term::Num(operation.apply(a, b)),
-                (Term::Str(_), Term::Str(_)) => unreachable!(),
+                (Term::Num(a), Term::Num(b)) => Term::Num(operation.apply(*a, *b)),
             }
         }
         Monkey::Human(_number) => Term::Str("human".into()),
