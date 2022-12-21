@@ -5,12 +5,45 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let mut numbers: Vec<(usize, i64)> = input
+    let numbers: Vec<(usize, i64)> = input
         .lines()
         .map(|line| line.parse().unwrap())
         .enumerate()
         .collect();
 
+    let part1 = decrypt(numbers.clone(), 1);
+    println!("part1 = {part1}");
+
+    let numbers: Vec<_> = numbers
+        .into_iter()
+        .map(|(i, num)| (i, num * 811_589_153))
+        .collect();
+    let part2 = decrypt(numbers, 10);
+    println!("part2 = {part2}");
+}
+
+fn decrypt(mut numbers: Vec<(usize, i64)>, cycles: usize) -> i64 {
+    for _ in 0..cycles {
+        mix(&mut numbers);
+    }
+
+    let zero_index = numbers
+        .iter()
+        .position(|(_index, number)| *number == 0)
+        .unwrap();
+
+    numbers
+        .iter()
+        .map(|(_, number)| number)
+        .cycle()
+        .skip(zero_index)
+        .step_by(1_000)
+        .skip(1)
+        .take(3)
+        .sum()
+}
+
+fn mix(numbers: &mut Vec<(usize, i64)>) {
     let length = numbers.len();
     for index in 0..length {
         let index_of_number_to_move = numbers.iter().position(|(i, _)| *i == index).unwrap();
@@ -46,21 +79,4 @@ fn main() {
             numbers[target] = (index, original_number_to_move);
         }
     }
-
-    let zero_index = numbers
-        .iter()
-        .position(|(_index, number)| *number == 0)
-        .unwrap();
-
-    let part1: i64 = numbers
-        .iter()
-        .map(|(_, number)| number)
-        .cycle()
-        .skip(zero_index)
-        .step_by(1_000)
-        .skip(1)
-        .take(3)
-        .sum();
-
-    println!("part1 = {part1:?}");
 }
