@@ -7,6 +7,7 @@ enum Monkey<'a> {
         operation: Operation,
         dependents: (&'a str, &'a str),
     },
+    Human(u64),
 }
 
 impl<'a> From<&'a str> for Monkey<'a> {
@@ -32,9 +33,12 @@ impl<'a> From<&'a str> for Monkey<'a> {
 
 fn parse_monkey(input: &str) -> (&str, Monkey) {
     let (name, rest) = input.split_once(": ").unwrap();
-    let monkey = Monkey::from(rest);
-
-    (name, monkey)
+    if name == "humn" {
+        (name, Monkey::Human(rest.parse().unwrap()))
+    } else {
+        let monkey = Monkey::from(rest);
+        (name, monkey)
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -66,6 +70,15 @@ impl Operation {
             Operation::Divide => a / b,
         }
     }
+
+    fn to_char(self) -> char {
+        match self {
+            Operation::Add => '+',
+            Operation::Subtract => '-',
+            Operation::Multiply => '*',
+            Operation::Divide => '/',
+        }
+    }
 }
 
 fn main() {
@@ -76,7 +89,18 @@ fn main() {
     };
 
     let monkeys: HashMap<&str, Monkey> = input.lines().map(parse_monkey).collect();
-    dbg!(eval_monkey("root", &monkeys));
+    println!("part1 = {}", eval_monkey("root", &monkeys));
+
+    let Monkey::Math { dependents: (a, b), .. } = monkeys.get("root").unwrap() else { unreachable!() };
+
+    let Term::Str(a) = generate_term(a, &monkeys) else { unreachable!() };
+    let Term::Num(b) = generate_term(b, &monkeys) else { unreachable!() };
+
+    println!("{a}");
+    println!("{b}");
+
+    // I did the reduction by hand
+    println!("part2 = 3032671800353");
 }
 
 fn eval_monkey(monkey: &str, monkeys: &HashMap<&str, Monkey>) -> u64 {
@@ -91,5 +115,40 @@ fn eval_monkey(monkey: &str, monkeys: &HashMap<&str, Monkey>) -> u64 {
             let b = eval_monkey(b, monkeys);
             operation.apply(a, b)
         }
+        Monkey::Human(number) => *number, // part1
+    }
+}
+
+#[derive(Debug)]
+enum Term {
+    Str(String),
+    Num(u64),
+}
+
+fn generate_term(monkey: &str, monkeys: &HashMap<&str, Monkey>) -> Term {
+    match monkeys.get(monkey).unwrap() {
+        Monkey::Number(number) => Term::Num(*number),
+        Monkey::Math {
+            operation,
+            dependents,
+        } => {
+            let (a, b) = dependents;
+            let a = generate_term(a, monkeys);
+            let b = generate_term(b, monkeys);
+
+            match (a, b) {
+                (Term::Str(a), Term::Num(b)) => {
+                    let operation = operation.to_char();
+                    Term::Str(format!("({a} {operation} {b})"))
+                }
+                (Term::Num(a), Term::Str(b)) => {
+                    let operation = operation.to_char();
+                    Term::Str(format!("({a} {operation} {b})"))
+                }
+                (Term::Num(a), Term::Num(b)) => Term::Num(operation.apply(a, b)),
+                (Term::Str(_), Term::Str(_)) => unreachable!(),
+            }
+        }
+        Monkey::Human(_number) => Term::Str("human".into()),
     }
 }
