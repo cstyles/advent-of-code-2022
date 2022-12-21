@@ -25,9 +25,8 @@ fn decrypt(mut numbers: Vec<(usize, i64)>, cycles: usize) -> i64 {
     }
 
     numbers
-        .iter()
+        .into_iter()
         .map(|(_, number)| number)
-        .copied()
         .cycle()
         .skip_while(|number| *number != 0)
         .step_by(1_000)
