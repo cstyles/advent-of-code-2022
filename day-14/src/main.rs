@@ -210,13 +210,10 @@ fn find_resting_place(grid: &[Vec<Tile>], abyss: usize) -> Option<Point> {
 
 // Anything below the lowest rock will fall into the abyss
 fn find_lowest_rock(grid: &[Vec<Tile>]) -> usize {
-    let position_from_bottom = grid
+    grid
         .iter()
-        .rev()
-        .position(|row| row.contains(&Rock))
-        .unwrap();
-
-    grid.len() - position_from_bottom - 1
+        .rposition(|row| row.contains(&Rock))
+        .unwrap()
 }
 
 trait OptionExt<T> {
