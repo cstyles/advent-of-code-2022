@@ -1,5 +1,7 @@
-use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
+
+use fnv::FnvHashMap as HashMap;
+use fnv::FnvHashSet as HashSet;
 
 use Direction::*;
 
@@ -138,7 +140,7 @@ fn propose(
     directions_to_consider: DirectionsToConsider,
 ) -> (HashMap<Point, usize>, HashMap<Point, Point>) {
     let mut how_many_elves_per_destination: HashMap<Point, usize> = HashMap::default();
-    let mut destinations: HashMap<Point, Point> = HashMap::with_capacity(elves.len());
+    let mut destinations: HashMap<Point, Point> = HashMap::default();
 
     'elves: for elf in elves {
         if stranded(elf, elves) {
