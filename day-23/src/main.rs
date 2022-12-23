@@ -98,12 +98,22 @@ fn main() {
     .cycle();
 
     let mut elves = parse_input(&input);
-    for _ in 1..=10 {
-        elves = round(&elves, directions_to_consider.next().unwrap());
+    for i in 1.. {
+        let new_elves = round(&elves, directions_to_consider.next().unwrap());
+
+        if elves == new_elves {
+            println!("part2 = {i}");
+            break;
+        }
+
+        elves = new_elves;
+
+        if i == 10 {
+            let (top_left, bottom_right) = smallest_rectangle(&elves);
+            println!("part1 = {}", area(top_left, bottom_right) - elves.len());
+        }
     }
 
-    let (top_left, bottom_right) = smallest_rectangle(&elves);
-    println!("part1 = {}", area(top_left, bottom_right) - elves.len());
 }
 
 fn parse_input(input: &str) -> HashSet<Point> {
