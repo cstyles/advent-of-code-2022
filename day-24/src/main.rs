@@ -27,7 +27,7 @@ impl Point {
             self.y = 20;
             // self.y = 4;
         } else if self.y > 20 {
-        // } else if self.y > 4 {
+            // } else if self.y > 4 {
             self.y = 1;
         }
 
@@ -35,7 +35,7 @@ impl Point {
             self.x = 150;
             // self.x = 6;
         } else if self.x > 150 {
-        // } else if self.x > 6 {
+            // } else if self.x > 6 {
             self.x = 1;
         }
 
@@ -155,43 +155,23 @@ fn main() {
     }
 
     let full_grid: Grid = populate_grid(&mut blizzards, number_of_rows, number_of_columns);
+    let mut total_time = 0;
 
-    let mut to_trips = vec![];
     let start = Point { y: 1, x: 1 };
-    for start_minute in possible_starts(&full_grid, start).into_iter() {
-        // let end = Point { y: 4, x: 6 };
-        let end = Point { y: 20, x: 150 };
-        if let Some(shortest_time) = search(&full_grid, start_minute, start, end) {
-            to_trips.push((start_minute, shortest_time - start_minute));
-        }
-    }
+    let start_minute = next_possible_start(&full_grid, 0, start);
+    let end = Point { y: 20, x: 150 };
+    let time_to_end = search(&full_grid, start_minute, start, end).unwrap();
+    println!("part1 = {time_to_end}");
+    total_time += time_to_end + 1;
 
-    let mut from_trips = vec![];
-    // let start = Point { y: 4, x: 6 };
-    let start = Point { y: 20, x: 150 };
-    for start_minute in possible_starts(&full_grid, start).into_iter() {
-        let end = Point { y: 1, x: 1 };
-        if let Some(shortest_time) = search(&full_grid, start_minute, start, end) {
-            from_trips.push((start_minute, shortest_time - start_minute));
-        }
-    }
+    let start_minute = next_possible_start(&full_grid, total_time, end);
+    let time_back_to_start = search(&full_grid, start_minute, end, start).unwrap() - start_minute;
+    total_time += time_back_to_start + 1;
 
-    for (start_minute, time) in to_trips.into_iter() {
-        println!("{start_minute}: {time} (total: {})", start_minute + time);
-    }
-    println!();
-    for (start_minute, time) in from_trips.into_iter() {
-        println!("{start_minute}: {time} (total: {})", start_minute + time);
-    }
-
-    // Leave on minute 2, takes 330 minutes
-    // Arrive at end on minute 332 (%32)
-    // Have to wait 1 minute until 333 (%33)
-    // Leave on minute 333, takes 297 minutes
-    // Arrive at start on 333 + 297 = 630 (%30)
-    // Have to wait 1 minute until 631 (%31)
-    // Leave on minute 631, takes 311 minutes
-    // Arrive at end on 631 + 311 = 942
+    let start_minute = next_possible_start(&full_grid, total_time, start);
+    let time_back_to_end = search(&full_grid, start_minute, start, end).unwrap() - start_minute;
+    total_time += time_back_to_end;
+    println!("part2 = {}", total_time);
 }
 
 fn search(
@@ -237,7 +217,7 @@ fn populate_grid(
     let mut final_grid = vec![];
 
     for _minute in 0..300 {
-    // for _minute in 0..12 {
+        // for _minute in 0..12 {
         let mut grid = vec![vec![false; number_of_columns + 1]; number_of_rows + 1];
 
         for blizzard in blizzards.iter_mut() {
@@ -251,15 +231,18 @@ fn populate_grid(
     final_grid
 }
 
-fn possible_starts(full_grid: &Grid, start_location: Point) -> Vec<usize> {
+fn next_possible_start(full_grid: &Grid, start_minute: usize, start_location: Point) -> usize {
     let (y, x) = (start_location.y, start_location.x);
+    let start_minute = start_minute % 300;
 
     full_grid
         .iter()
         .enumerate()
+        .skip(start_minute)
         .filter(|(_minute, snapshot)| !snapshot[y][x])
         .map(|(minute, _snapshot)| minute)
-        .collect()
+        .next()
+        .unwrap()
 }
 
 #[allow(unused)]
