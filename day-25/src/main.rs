@@ -13,12 +13,9 @@ fn parse_snafu_digit(c: char) -> i64 {
 }
 
 fn parse_snafu_number(string: &str) -> i64 {
-    string.chars().rev().enumerate().fold(0, |sum, (i, c)| {
-        let magnitude = 5i64.pow(i as u32);
-        let digit = parse_snafu_digit(c);
-        let digit = digit * magnitude;
-        sum + digit
-    })
+    string
+        .chars()
+        .fold(0, |sum, c| sum * 5 + parse_snafu_digit(c))
 }
 
 fn as_snafu_digit(num: i64) -> char {
