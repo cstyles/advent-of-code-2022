@@ -1,8 +1,8 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Valve<'input> {
-    name: &'input str,
+    debug_name: &'input str,
     flow_rate: usize,
     neighbors: Vec<&'input str>,
 }
@@ -11,7 +11,7 @@ impl<'input> From<&'input str> for Valve<'input> {
     fn from(input: &'input str) -> Self {
         let mut words = input.split(' ');
 
-        let name = words.nth(1).unwrap();
+        let debug_name = words.nth(1).unwrap();
         let flow_rate = words.nth(2).unwrap();
 
         let mut neighbors: Vec<_> = input.rsplit(", ").collect();
@@ -24,11 +24,17 @@ impl<'input> From<&'input str> for Valve<'input> {
         let flow_rate = flow_rate.parse().unwrap();
 
         Self {
-            name,
+            debug_name,
             flow_rate,
             neighbors,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct RealValve {
+    flow_rate: usize,
+    neighbors: Vec<usize>,
 }
 
 fn main() {
@@ -38,154 +44,164 @@ fn main() {
         include_str!("../input.txt")
     };
 
-    let valves: HashMap<&str, Valve> = input
-        .lines()
-        .map(|line| {
-            let valve = Valve::from(line);
-            let name = valve.name;
-            (name, valve)
+    let valves: Vec<Valve> = input.lines().map(Valve::from).collect();
+
+    let map_of_debug_name_to_namecode: HashMap<&str, usize> = valves
+        .iter()
+        .enumerate()
+        .map(|(name, valve)| (valve.debug_name, name))
+        .collect();
+
+    let real_valves: Vec<RealValve> = valves
+        .into_iter()
+        .map(|old_valve| {
+            let neighbors = old_valve
+                .neighbors
+                .into_iter()
+                .map(|neighbor| *map_of_debug_name_to_namecode.get(neighbor).unwrap())
+                .collect();
+
+            RealValve {
+                flow_rate: old_valve.flow_rate,
+                neighbors,
+            }
         })
         .collect();
 
-    let distances = floyd_warshall(&valves);
-    lets_go(&valves, &distances);
+    let distances = floyd_warshall(&real_valves);
+    lets_go(&real_valves, &distances);
 }
 
-// minutes remaining (usize), current valve (&str), unopened valves (usize)
-type State<'input> = (usize, &'input str, usize);
+// minutes remaining, current valve, unopened valves
+type State<'input> = (usize, usize, usize);
 
-// fn lets_go(valves: &[Valve], distances: &Distances) {
-fn lets_go(valves: &HashMap<&str, Valve>, distances: &Distances) {
-    // State:
-    // - Current valve (string)
-    // - Minutes remaining (int)
-    // - Unopened valves (set)
-    //
+fn lets_go(valves: &[RealValve], distances: &Distances) {
     let mut states: HashMap<State, usize> = HashMap::default();
 
-    let mut useful_valves: Vec<&str> = valves
-        .values()
-        .filter(|valve| valve.flow_rate > 0)
-        .map(|valve| valve.name)
-        .collect();
-    useful_valves.sort();
-    let useful_valves = useful_valves;
-
-    let _map_of_valves_to_bits: HashMap<&str, usize> = useful_valves
+    let useful_valve_names: Vec<usize> = valves
         .iter()
         .enumerate()
-        .map(|(i, name)| (*name, i))
+        .filter(|(_i, valve)| valve.flow_rate > 0)
+        .map(|(i, _valve)| i)
         .collect();
 
     let minutes_remaining = 0;
-    for current_valve in valves.values() {
-        for i in 0..2usize.pow(useful_valves.len() as u32) {
-            let key = (minutes_remaining, current_valve.name, i);
+    for name in 0..valves.len() {
+        for i in 0..2usize.pow(useful_valve_names.len() as u32) {
+            let key = (minutes_remaining, name, i);
             states.insert(key, 0);
         }
     }
 
-    // for minutes_remaining in 1usize..=30 {
     for minutes_remaining in 1usize..=30 {
         dbg!(minutes_remaining);
-        // for minutes_remaining in 1usize..=10 {
-        for current_valve in valves.values() {
-            // for current_valve in valves.values().filter(|valve| valve.name == "BB") {
-            for i in 0..2usize.pow(useful_valves.len() as u32) {
-                // for i in 63..=63 {
-                // println!("{minutes_remaining}, {}, {i}", current_valve.name);
-                // let key = (minutes_remaining - 1, current_valve.name, i);
-                // let current_state = states.get(&key).unwrap();
-
-                // Calculate the nil move (do nothing, reap)
-                // Iterate over possible moves
-                // i.e., all unopened valves
-                // - calculate how much moving to that valve would generate
-                //   - (minutes remaining - 1 - distance) * flow rate
-                // - lookup best possible outcome after that move
-                //   - minutes remaining = minutes remaining - 1 - distance
-                //   - unopened = unopened - that valve
-                // - add would_generate and best_possible_outcome
-                // - select max of that sum over all possible moves
-
-                let valveset = usize_to_valveset(i);
-                let unopened_valves = valveset.unopened;
-                let opened_valves = valveset.opened;
-
-                let previous_key = (minutes_remaining - 1, current_valve.name, i);
-                let previous = states.get(&previous_key).unwrap();
-                let do_nothing = currently_producing(valves, &opened_valves) + previous;
-
-                let mut best_move = do_nothing;
-                for unopened_valve in unopened_valves.iter() {
-                    let distance_to = distances
-                        .get(&(current_valve.name, unopened_valve))
-                        .unwrap();
-
-                    let minutes_remaining_after_move = match minutes_remaining
-                        .checked_sub(1)
-                        .and_then(|x| x.checked_sub(*distance_to))
-                    {
-                        Some(x) => x,
-                        None => continue,
-                    };
-
-                    let to_remove: HashSet<&str> = [*unopened_valve].into();
-                    let new_unopened: HashSet<&str> =
-                        unopened_valves.difference(&to_remove).copied().collect();
-                    let i_after_move = unopened_to_usize(&new_unopened);
-
-                    let next_state = (minutes_remaining_after_move, *unopened_valve, i_after_move);
-                    let best_outcome_after_move = states.get(&next_state).unwrap();
-
-                    let produced_along_the_way = (minutes_remaining - minutes_remaining_after_move)
-                        * currently_producing(valves, &opened_valves);
-                    let final_stuff = best_outcome_after_move + produced_along_the_way;
-
-                    if final_stuff > best_move {
-                        best_move = final_stuff;
-                    }
-                }
-
-                let key = (minutes_remaining, current_valve.name, i);
+        for current_valve_name in 0..valves.len() {
+            for i in 0..2usize.pow(useful_valve_names.len() as u32) {
+                let best_move = find_best_move(
+                    valves,
+                    &useful_valve_names,
+                    distances,
+                    &states,
+                    minutes_remaining,
+                    current_valve_name,
+                    i,
+                );
+                let key = (minutes_remaining, current_valve_name, i);
                 states.insert(key, best_move);
             }
         }
     }
 
-    // println!("{}", states.get(&(30, "AA", 0x3F)).unwrap());
-    println!("{}", states.get(&(30, "AA", 0x7FFF)).unwrap());
+    // let part1 = find_best_move(valves, &useful_valve_names, distances, &states, minutes_remaining, 0, 0x3F);
+    // println!("part1 = {part1}");
 
-    // for ((minutes_remaining, current_valve, unopened_valves), produced) in states {
-    //     println!("({minutes_remaining}, {current_valve}, {unopened_valves}): {produced}");
-    // }
+    // println!("{}", states.get(&(30, 0, 0x3F)).unwrap());
+    println!("{}", states.get(&(30, 14, 0x7FFF)).unwrap());
+
+    for ((minutes_remaining, current_valve, unopened_valves), produced) in states {
+        // println!("({minutes_remaining}, {current_valve}, {unopened_valves}): {produced}");
+    }
 }
 
-type Distances<'input> = HashMap<(&'input str, &'input str), usize>;
+fn find_best_move(
+    valves: &[RealValve],
+    useful_valve_names: &[usize],
+    distances: &Distances,
+    states: &HashMap<State, usize>,
+    minutes_remaining: usize,
+    current_valve_name: usize,
+    i: usize,
+) -> usize {
+    let size = if std::env::var("TEST").is_ok() { 6 } else { 15 };
 
-fn floyd_warshall<'input>(valves: &'input HashMap<&str, Valve>) -> Distances<'input> {
-    let mut distances: Distances = HashMap::default();
+    let valveset = BitSet { num: i, size };
+    let unopened_valves = valveset.unopened();
+    let opened_valves = valveset.opened();
+    let opened_valves: Vec<usize> = opened_valves
+        .into_iter()
+        .map(|useful_valve| useful_valve_names[useful_valve])
+        .collect();
 
-    for valve in valves.values() {
-        for neighbor in &valve.neighbors {
-            distances.insert((valve.name, neighbor), 1);
-            distances.insert((neighbor, valve.name), 1);
+    let previous_key = (minutes_remaining - 1, current_valve_name, i);
+    let previous = states.get(&previous_key).unwrap();
+    let do_nothing = currently_producing(valves, &opened_valves) + previous;
+
+    let mut best_move = do_nothing;
+    for &unopened_valve in unopened_valves.iter() {
+        let real_name = useful_valve_names[unopened_valve];
+
+        let distance_to = distances[current_valve_name][real_name];
+
+        let minutes_remaining_after_move = match minutes_remaining
+            .checked_sub(1)
+            .and_then(|x| x.checked_sub(distance_to))
+        {
+            Some(x) => x,
+            None => continue,
+        };
+
+        let i_after_move = BitSet { num: i, size }.without(unopened_valve).num;
+
+        let next_state = (minutes_remaining_after_move, real_name, i_after_move);
+        let best_outcome_after_move = states.get(&next_state).unwrap();
+
+        let produced_along_the_way = (minutes_remaining - minutes_remaining_after_move)
+            * currently_producing(valves, &opened_valves);
+        let final_stuff = best_outcome_after_move + produced_along_the_way;
+
+        if final_stuff > best_move {
+            best_move = final_stuff;
         }
-
-        distances.insert((valve.name, valve.name), 0);
     }
 
-    for k in valves.values() {
-        for i in valves.values() {
-            for j in valves.values() {
-                let to_k = distances.get(&(i.name, k.name)).unwrap_or(&usize::MAX);
-                let from_k = distances.get(&(k.name, j.name)).unwrap_or(&usize::MAX);
-                let direct = distances.get(&(i.name, j.name)).unwrap_or(&usize::MAX);
-                let through = to_k.checked_add(*from_k).unwrap_or(usize::MAX);
+    best_move
+}
 
-                if *direct > through {
-                    distances.insert((i.name, j.name), through);
-                    distances.insert((j.name, i.name), through);
+type Distances = Vec<Vec<usize>>;
+
+fn floyd_warshall(valves: &[RealValve]) -> Distances {
+    let mut distances: Distances = vec![vec![usize::MAX; valves.len()]; valves.len()];
+
+    for (name, valve) in valves.iter().enumerate() {
+        for &neighbor in &valve.neighbors {
+            distances[name][neighbor] = 1;
+            distances[neighbor][name] = 1;
+        }
+
+        distances[name][name] = 0;
+    }
+
+    for k in 0..valves.len() {
+        for i in 0..valves.len() {
+            for j in 0..valves.len() {
+                let to_k = distances[i][k];
+                let from_k = distances[k][j];
+                let direct = distances[i][j];
+                let through = to_k.checked_add(from_k).unwrap_or(usize::MAX);
+
+                if direct > through {
+                    distances[i][j] = through;
+                    distances[j][i] = through;
                 }
             }
         }
@@ -194,53 +210,59 @@ fn floyd_warshall<'input>(valves: &'input HashMap<&str, Valve>) -> Distances<'in
     distances
 }
 
-#[derive(Debug, Default)]
-struct ValveSet<'input> {
-    opened: HashSet<&'input str>,
-    unopened: HashSet<&'input str>,
+fn currently_producing(valves: &[RealValve], opened: &[usize]) -> usize {
+    opened.iter().map(|&num| valves[num].flow_rate).sum()
 }
 
-fn usize_to_valveset<'input>(number: usize) -> ValveSet<'input> {
-    // assert!(number <= 0x3F);
-    // const USEFUL_VALVES: [&str; 6] = ["BB", "CC", "DD", "EE", "HH", "JJ"];
-    assert!(number <= 0x7FFF);
-    const USEFUL_VALVES: [&str; 15] = [
-        "QN", "DS", "AE", "SE", "IJ", "GJ", "EU", "UK", "QB", "MN", "CO", "CS", "NA", "KF", "XM",
-    ];
-    let mut set = ValveSet::default();
+#[derive(Debug, Default, Copy, Clone)]
+struct BitSet {
+    num: usize,
+    size: usize,
+}
 
-    for (i, valve) in USEFUL_VALVES.into_iter().enumerate() {
-        let bit = (number >> i) & 1;
-        if bit == 0 {
-            set.opened.insert(valve);
-        } else {
-            set.unopened.insert(valve);
-        }
+impl BitSet {
+    fn contains(&self, bit: usize) -> bool {
+        (self.num >> bit) & 1 != 0
     }
 
-    set
-}
+    fn unopened(&self) -> Vec<usize> {
+        let mut bits = vec![];
 
-fn unopened_to_usize(unopened: &HashSet<&str>) -> usize {
-    // const USEFUL_VALVES: [&str; 6] = ["BB", "CC", "DD", "EE", "HH", "JJ"];
-    const USEFUL_VALVES: [&str; 15] = [
-        "QN", "DS", "AE", "SE", "IJ", "GJ", "EU", "UK", "QB", "MN", "CO", "CS", "NA", "KF", "XM",
-    ];
+        let mut set = self.num;
+        let mut i = 0;
+        while i < self.size {
+            if set & 1 != 0 {
+                bits.push(i);
+            }
 
-    let mut number = 0;
-
-    for (i, valve) in USEFUL_VALVES.into_iter().enumerate() {
-        if unopened.contains(valve) {
-            number |= 1 << i;
+            set >>= 1;
+            i += 1;
         }
+
+        bits
     }
 
-    number
-}
+    fn opened(&self) -> Vec<usize> {
+        let mut bits = vec![];
 
-fn currently_producing(valves: &HashMap<&str, Valve>, opened_valves: &HashSet<&str>) -> usize {
-    opened_valves
-        .iter()
-        .map(|name| valves.get(name).unwrap().flow_rate)
-        .sum()
+        let mut set = self.num;
+        let mut i = 0;
+        while i < self.size {
+            if set & 1 == 0 {
+                bits.push(i);
+            }
+
+            set >>= 1;
+            i += 1;
+        }
+
+        bits
+    }
+
+    fn without(self, bit: usize) -> Self {
+        let mask = !(1 << bit);
+        let num = self.num & mask;
+
+        Self { num, ..self }
+    }
 }
