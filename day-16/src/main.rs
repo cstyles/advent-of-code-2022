@@ -73,10 +73,11 @@ fn main() {
 }
 
 // minutes remaining, current valve, unopened valves
-type State<'input> = (usize, usize, usize);
+type States = Vec<Vec<Vec<usize>>>;
 
 fn lets_go(valves: &[RealValve], distances: &Distances) {
-    let mut states: HashMap<State, usize> = HashMap::default();
+    let size = if std::env::var("TEST").is_ok() { 6 } else { 15 };
+    let mut states = vec![vec![vec![0; 2usize.pow(size as u32)]; valves.len()]; 31];
 
     let useful_valve_names: Vec<usize> = valves
         .iter()
@@ -88,12 +89,10 @@ fn lets_go(valves: &[RealValve], distances: &Distances) {
     let minutes_remaining = 0;
     for name in 0..valves.len() {
         for i in 0..2usize.pow(useful_valve_names.len() as u32) {
-            let key = (minutes_remaining, name, i);
-            states.insert(key, 0);
+            states[minutes_remaining][name][i] = 0;
         }
     }
 
-    let size = if std::env::var("TEST").is_ok() { 6 } else { 15 };
     for minutes_remaining in 1usize..=30 {
         dbg!(minutes_remaining);
         for &current_valve_name in useful_valve_names.iter() {
@@ -108,8 +107,7 @@ fn lets_go(valves: &[RealValve], distances: &Distances) {
                     i,
                     size,
                 );
-                let key = (minutes_remaining, current_valve_name, i);
-                states.insert(key, best_move);
+                states[minutes_remaining][current_valve_name][i] = best_move;
             }
         }
     }
@@ -149,7 +147,7 @@ fn find_best_move(
     valves: &[RealValve],
     useful_valve_names: &[usize],
     distances: &Distances,
-    states: &HashMap<State, usize>,
+    states: &States,
     minutes_remaining: usize,
     current_valve_name: usize,
     i: usize,
@@ -178,9 +176,7 @@ fn find_best_move(
         };
 
         let i_after_move = BitSet { num: i, size }.without(unopened_valve).num;
-
-        let next_state = (minutes_remaining_after_move, real_name, i_after_move);
-        let best_outcome_after_move = states.get(&next_state).unwrap();
+        let best_outcome_after_move = states[minutes_remaining_after_move][real_name][i_after_move];
 
         let produced_along_the_way = (minutes_remaining - minutes_remaining_after_move)
             * currently_producing(valves, &opened_valves);
@@ -195,8 +191,7 @@ fn find_best_move(
     }
 
     best_move.unwrap_or_else(|| {
-        let previous_key = (minutes_remaining - 1, current_valve_name, i);
-        let previous = states.get(&previous_key).unwrap();
+        let previous = states[minutes_remaining - 1][current_valve_name][i];
         currently_producing(valves, &opened_valves) + previous
     })
 }
