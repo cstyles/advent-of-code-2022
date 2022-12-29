@@ -93,9 +93,10 @@ fn lets_go(valves: &[RealValve], distances: &Distances) {
         }
     }
 
+    let size = if std::env::var("TEST").is_ok() { 6 } else { 15 };
     for minutes_remaining in 1usize..=30 {
         dbg!(minutes_remaining);
-        for current_valve_name in 0..valves.len() {
+        for &current_valve_name in useful_valve_names.iter() {
             for i in 0..2usize.pow(useful_valve_names.len() as u32) {
                 let best_move = find_best_move(
                     valves,
@@ -105,6 +106,7 @@ fn lets_go(valves: &[RealValve], distances: &Distances) {
                     minutes_remaining,
                     current_valve_name,
                     i,
+                    size,
                 );
                 let key = (minutes_remaining, current_valve_name, i);
                 states.insert(key, best_move);
@@ -112,15 +114,35 @@ fn lets_go(valves: &[RealValve], distances: &Distances) {
         }
     }
 
-    // let part1 = find_best_move(valves, &useful_valve_names, distances, &states, minutes_remaining, 0, 0x3F);
-    // println!("part1 = {part1}");
+    let part1 = if std::env::var("TEST").is_ok() {
+        find_best_move(
+            valves,
+            &useful_valve_names,
+            distances,
+            &states,
+            30,
+            0,
+            0x3F,
+            size,
+        )
+    } else {
+        find_best_move(
+            valves,
+            &useful_valve_names,
+            distances,
+            &states,
+            30,
+            14,
+            0x7FFF,
+            size,
+        )
+    };
 
-    // println!("{}", states.get(&(30, 0, 0x3F)).unwrap());
-    println!("{}", states.get(&(30, 14, 0x7FFF)).unwrap());
+    println!("part1 = {part1}");
 
-    for ((minutes_remaining, current_valve, unopened_valves), produced) in states {
-        // println!("({minutes_remaining}, {current_valve}, {unopened_valves}): {produced}");
-    }
+    // for ((minutes_remaining, current_valve, unopened_valves), produced) in states {
+    //     println!("({minutes_remaining}, {current_valve}, {unopened_valves}): {produced}");
+    // }
 }
 
 fn find_best_move(
@@ -131,9 +153,8 @@ fn find_best_move(
     minutes_remaining: usize,
     current_valve_name: usize,
     i: usize,
+    size: usize,
 ) -> usize {
-    let size = if std::env::var("TEST").is_ok() { 6 } else { 15 };
-
     let valveset = BitSet { num: i, size };
     let unopened_valves = valveset.unopened();
     let opened_valves = valveset.opened();
@@ -142,11 +163,7 @@ fn find_best_move(
         .map(|useful_valve| useful_valve_names[useful_valve])
         .collect();
 
-    let previous_key = (minutes_remaining - 1, current_valve_name, i);
-    let previous = states.get(&previous_key).unwrap();
-    let do_nothing = currently_producing(valves, &opened_valves) + previous;
-
-    let mut best_move = do_nothing;
+    let mut best_move = None;
     for &unopened_valve in unopened_valves.iter() {
         let real_name = useful_valve_names[unopened_valve];
 
@@ -169,12 +186,19 @@ fn find_best_move(
             * currently_producing(valves, &opened_valves);
         let final_stuff = best_outcome_after_move + produced_along_the_way;
 
-        if final_stuff > best_move {
-            best_move = final_stuff;
+        if best_move
+            .map(|best_move| final_stuff > best_move)
+            .unwrap_or(true)
+        {
+            best_move = Some(final_stuff);
         }
     }
 
-    best_move
+    best_move.unwrap_or_else(|| {
+        let previous_key = (minutes_remaining - 1, current_valve_name, i);
+        let previous = states.get(&previous_key).unwrap();
+        currently_producing(valves, &opened_valves) + previous
+    })
 }
 
 type Distances = Vec<Vec<usize>>;
