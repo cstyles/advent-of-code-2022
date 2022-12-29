@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Valve<'input> {
@@ -45,11 +45,15 @@ fn main() {
     };
 
     let valves: Vec<Valve> = input.lines().map(Valve::from).collect();
+    let start = valves
+        .iter()
+        .position(|valve| valve.debug_name == "AA")
+        .unwrap();
 
-    let map_of_debug_name_to_namecode: HashMap<&str, usize> = valves
+    let map_of_debug_name_to_index: HashMap<&str, usize> = valves
         .iter()
         .enumerate()
-        .map(|(name, valve)| (valve.debug_name, name))
+        .map(|(index, valve)| (valve.debug_name, index))
         .collect();
 
     let real_valves: Vec<RealValve> = valves
@@ -58,7 +62,7 @@ fn main() {
             let neighbors = old_valve
                 .neighbors
                 .into_iter()
-                .map(|neighbor| *map_of_debug_name_to_namecode.get(neighbor).unwrap())
+                .map(|neighbor| *map_of_debug_name_to_index.get(neighbor).unwrap())
                 .collect();
 
             RealValve {
@@ -69,131 +73,79 @@ fn main() {
         .collect();
 
     let distances = floyd_warshall(&real_valves);
-    lets_go(&real_valves, &distances);
+    part1(&real_valves, &distances, start);
 }
 
-// minutes remaining, current valve, unopened valves
-type States = Vec<Vec<Vec<usize>>>;
-
-fn lets_go(valves: &[RealValve], distances: &Distances) {
-    let size = if std::env::var("TEST").is_ok() { 6 } else { 15 };
-    let mut states = vec![vec![vec![0; 2usize.pow(size as u32)]; valves.len()]; 31];
-
-    let useful_valve_names: Vec<usize> = valves
-        .iter()
-        .enumerate()
-        .filter(|(_i, valve)| valve.flow_rate > 0)
-        .map(|(i, _valve)| i)
-        .collect();
-
-    let minutes_remaining = 0;
-    for name in 0..valves.len() {
-        for i in 0..2usize.pow(useful_valve_names.len() as u32) {
-            states[minutes_remaining][name][i] = 0;
-        }
-    }
-
-    for minutes_remaining in 1usize..=30 {
-        dbg!(minutes_remaining);
-        for &current_valve_name in useful_valve_names.iter() {
-            for i in 0..2usize.pow(useful_valve_names.len() as u32) {
-                let best_move = find_best_move(
-                    valves,
-                    &useful_valve_names,
-                    distances,
-                    &states,
-                    minutes_remaining,
-                    current_valve_name,
-                    i,
-                    size,
-                );
-                states[minutes_remaining][current_valve_name][i] = best_move;
-            }
-        }
-    }
-
-    let part1 = if std::env::var("TEST").is_ok() {
-        find_best_move(
-            valves,
-            &useful_valve_names,
-            distances,
-            &states,
-            30,
-            0,
-            0x3F,
-            size,
-        )
-    } else {
-        find_best_move(
-            valves,
-            &useful_valve_names,
-            distances,
-            &states,
-            30,
-            14,
-            0x7FFF,
-            size,
-        )
-    };
-
-    println!("part1 = {part1}");
-
-    // for ((minutes_remaining, current_valve, unopened_valves), produced) in states {
-    //     println!("({minutes_remaining}, {current_valve}, {unopened_valves}): {produced}");
-    // }
-}
-
-fn find_best_move(
-    valves: &[RealValve],
-    useful_valve_names: &[usize],
-    distances: &Distances,
-    states: &States,
+struct State {
     minutes_remaining: usize,
-    current_valve_name: usize,
-    i: usize,
-    size: usize,
-) -> usize {
-    let valveset = BitSet { num: i, size };
-    let unopened_valves = valveset.unopened();
-    let opened_valves = valveset.opened();
-    let opened_valves: Vec<usize> = opened_valves
-        .into_iter()
-        .map(|useful_valve| useful_valve_names[useful_valve])
-        .collect();
+    valveset: BitSet,
+    current_valve: usize,
+    relieved_so_far: usize,
+}
 
-    let mut best_move = None;
-    for &unopened_valve in unopened_valves.iter() {
-        let real_name = useful_valve_names[unopened_valve];
+fn part1(valves: &[RealValve], distances: &Distances, start: usize) {
+    let mut max_relieved = 0;
+    let mut queue: VecDeque<State> = VecDeque::new();
 
-        let distance_to = distances[current_valve_name][real_name];
+    let size = valves.len();
+    let num = usize::MAX ^ usize::MAX << size;
+    let valveset = BitSet { num, size };
 
-        let minutes_remaining_after_move = match minutes_remaining
-            .checked_sub(1)
-            .and_then(|x| x.checked_sub(distance_to))
+    queue.push_back(State {
+        minutes_remaining: 30,
+        valveset,
+        current_valve: start,
+        relieved_so_far: 0,
+    });
+
+    while let Some(State {
+        minutes_remaining,
+        valveset,
+        current_valve,
+        relieved_so_far,
+    }) = queue.pop_front()
+    {
+        // Try waiting until the end
+        let do_nothing = wait_until_end(valves, minutes_remaining, valveset);
+        max_relieved = max_relieved.max(relieved_so_far + do_nothing);
+
+        for valve in valveset
+            .unopened()
+            .into_iter()
+            .filter(|idx| valves[*idx].flow_rate > 0)
         {
-            Some(x) => x,
-            None => continue,
-        };
+            let new_valveset = valveset.without(valve);
+            let how_long_to_valve = distances[current_valve][valve] + 1;
 
-        let i_after_move = BitSet { num: i, size }.without(unopened_valve).num;
-        let best_outcome_after_move = states[minutes_remaining_after_move][real_name][i_after_move];
+            if how_long_to_valve >= minutes_remaining {
+                continue;
+            }
 
-        let produced_along_the_way = (minutes_remaining - minutes_remaining_after_move)
-            * currently_producing(valves, &opened_valves);
-        let final_stuff = best_outcome_after_move + produced_along_the_way;
+            let relieved_along_the_way = total_flowrate(valves, valveset) * how_long_to_valve;
+            let relieved_so_far = relieved_so_far + relieved_along_the_way;
 
-        if best_move
-            .map(|best_move| final_stuff > best_move)
-            .unwrap_or(true)
-        {
-            best_move = Some(final_stuff);
+            queue.push_back(State {
+                minutes_remaining: minutes_remaining - how_long_to_valve,
+                valveset: new_valveset,
+                current_valve: valve,
+                relieved_so_far,
+            });
         }
     }
 
-    best_move.unwrap_or_else(|| {
-        let previous = states[minutes_remaining - 1][current_valve_name][i];
-        currently_producing(valves, &opened_valves) + previous
-    })
+    println!("part1 = {max_relieved}");
+}
+
+fn total_flowrate(valves: &[RealValve], valveset: BitSet) -> usize {
+    valveset
+        .opened()
+        .into_iter()
+        .map(|idx| valves[idx].flow_rate)
+        .sum()
+}
+
+fn wait_until_end(valves: &[RealValve], minutes_remaining: usize, valveset: BitSet) -> usize {
+    minutes_remaining * total_flowrate(valves, valveset)
 }
 
 type Distances = Vec<Vec<usize>>;
@@ -229,10 +181,6 @@ fn floyd_warshall(valves: &[RealValve]) -> Distances {
     distances
 }
 
-fn currently_producing(valves: &[RealValve], opened: &[usize]) -> usize {
-    opened.iter().map(|&num| valves[num].flow_rate).sum()
-}
-
 #[derive(Debug, Default, Copy, Clone)]
 struct BitSet {
     num: usize,
@@ -240,10 +188,6 @@ struct BitSet {
 }
 
 impl BitSet {
-    fn contains(&self, bit: usize) -> bool {
-        (self.num >> bit) & 1 != 0
-    }
-
     fn unopened(&self) -> Vec<usize> {
         let mut bits = vec![];
 
