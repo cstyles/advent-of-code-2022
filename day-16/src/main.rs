@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Valve<'input> {
@@ -84,7 +84,7 @@ struct State {
 }
 
 fn part1(valves: &[RealValve], distances: &Distances, start: usize) {
-    let mut max_relieved = 0;
+    let mut max_relieved_states: HashMap<BitSet, usize> = HashMap::default();
     let mut queue: VecDeque<State> = VecDeque::new();
 
     let size = valves.len();
@@ -92,7 +92,7 @@ fn part1(valves: &[RealValve], distances: &Distances, start: usize) {
     let valveset = BitSet { num, size };
 
     queue.push_back(State {
-        minutes_remaining: 30,
+        minutes_remaining: 26,
         valveset,
         current_valve: start,
         relieved_so_far: 0,
@@ -107,7 +107,12 @@ fn part1(valves: &[RealValve], distances: &Distances, start: usize) {
     {
         // Try waiting until the end
         let do_nothing = wait_until_end(valves, minutes_remaining, valveset);
-        max_relieved = max_relieved.max(relieved_so_far + do_nothing);
+        max_relieved_states
+            .entry(valveset)
+            .and_modify(|max_relieved| {
+                *max_relieved = (*max_relieved).max(relieved_so_far + do_nothing)
+            })
+            .or_insert(relieved_so_far + do_nothing);
 
         for valve in valveset
             .unopened()
@@ -133,7 +138,31 @@ fn part1(valves: &[RealValve], distances: &Distances, start: usize) {
         }
     }
 
-    println!("part1 = {max_relieved}");
+    let part1 = max_relieved_states.values().max().unwrap();
+    println!("part1 = {part1}");
+
+    let relevant: Vec<usize> = valves
+        .iter()
+        .enumerate()
+        .filter(|(_i, valve)| valve.flow_rate > 0)
+        .map(|(i, _valve)| i)
+        .collect();
+
+    let mut part2 = 0;
+    for (elephant_set, elephant_max) in max_relieved_states.iter() {
+        for (human_set, human_max) in max_relieved_states.iter() {
+            let elephant_opened = elephant_set.relevant_opened(&relevant);
+            let human_opened = human_set.relevant_opened(&relevant);
+
+            if !elephant_opened.is_disjoint(&human_opened) {
+                continue;
+            }
+
+            part2 = part2.max(elephant_max + human_max);
+        }
+    }
+
+    println!("part2 = {part2}");
 }
 
 fn total_flowrate(valves: &[RealValve], valveset: BitSet) -> usize {
@@ -181,7 +210,7 @@ fn floyd_warshall(valves: &[RealValve]) -> Distances {
     distances
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq)]
 struct BitSet {
     num: usize,
     size: usize,
@@ -220,6 +249,13 @@ impl BitSet {
         }
 
         bits
+    }
+
+    fn relevant_opened(&self, relevant: &[usize]) -> HashSet<usize> {
+        self.opened()
+            .into_iter()
+            .filter(|bit| relevant.contains(bit))
+            .collect()
     }
 
     fn without(self, bit: usize) -> Self {
