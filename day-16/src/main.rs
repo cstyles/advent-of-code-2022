@@ -149,8 +149,8 @@ fn part1(valves: &[RealValve], distances: &Distances, start: usize) {
         .collect();
 
     let mut part2 = 0;
-    for (elephant_set, elephant_max) in max_relieved_states.iter() {
-        for (human_set, human_max) in max_relieved_states.iter() {
+    for (i, (elephant_set, elephant_max)) in max_relieved_states.iter().enumerate() {
+        for (human_set, human_max) in max_relieved_states.iter().skip(i) {
             let elephant_opened = elephant_set.relevant_opened(&relevant);
             let human_opened = human_set.relevant_opened(&relevant);
 
