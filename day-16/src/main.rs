@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Valve<'input> {
@@ -154,7 +154,7 @@ fn part1(valves: &[RealValve], distances: &Distances, start: usize) {
             let elephant_opened = elephant_set.relevant_opened(&relevant);
             let human_opened = human_set.relevant_opened(&relevant);
 
-            if !elephant_opened.is_disjoint(&human_opened) {
+            if !disjoint(&elephant_opened, &human_opened) {
                 continue;
             }
 
@@ -251,7 +251,7 @@ impl BitSet {
         bits
     }
 
-    fn relevant_opened(&self, relevant: &[usize]) -> HashSet<usize> {
+    fn relevant_opened(&self, relevant: &[usize]) -> Vec<usize> {
         self.opened()
             .into_iter()
             .filter(|bit| relevant.contains(bit))
@@ -264,4 +264,14 @@ impl BitSet {
 
         Self { num, ..self }
     }
+}
+
+fn disjoint<T: PartialEq>(v1: &[T], v2: &[T]) -> bool {
+    for x in v1 {
+        if v2.contains(x) {
+            return false;
+        }
+    }
+
+    true
 }
