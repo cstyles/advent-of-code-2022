@@ -1,3 +1,5 @@
+use std::collections::{HashSet, VecDeque};
+
 #[derive(Debug, Copy, Clone)]
 struct Blueprint {
     number: usize,
@@ -50,84 +52,160 @@ fn main() {
 
     let blueprints: Vec<_> = input.lines().map(Blueprint::from).collect();
 
-    for blueprint in &blueprints[..1] {
-        dbg!(test_blueprint(*blueprint));
+    let part1: usize = blueprints.into_iter().map(test_blueprint).sum();
+    println!("part1 = {part1}");
+    // for blueprint in blueprints {
+    //     println!(
+    //         "blueprint #{} can make {} geodes",
+    //         blueprint.number,
+    //         test_blueprint(blueprint)
+    //     );
+    // }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+struct State {
+    minutes_elapsed: usize,
+    ore_robots: usize,
+    clay_robots: usize,
+    obsidian_robots: usize,
+    geode_robots: usize,
+    ore: usize,
+    clay: usize,
+    obsidian: usize,
+    geodes: usize,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            minutes_elapsed: 0,
+            ore_robots: 1,
+            clay_robots: 0,
+            obsidian_robots: 0,
+            geode_robots: 0,
+            ore: 0,
+            clay: 0,
+            obsidian: 0,
+            geodes: 0,
+        }
     }
-    // dbg!(blueprints);
+}
+
+impl State {
+    fn next(self) -> Self {
+        Self {
+            minutes_elapsed: self.minutes_elapsed + 1,
+            ore: self.ore + self.ore_robots,
+            clay: self.clay + self.clay_robots,
+            obsidian: self.obsidian + self.obsidian_robots,
+            geodes: self.geodes + self.geode_robots,
+            ..self
+        }
+    }
+
+    fn build_ore_robot(self, blueprint: Blueprint) -> Self {
+        Self {
+            ore: self.ore + self.ore_robots - blueprint.ore_robot_cost,
+            ore_robots: self.ore_robots + 1,
+            ..self.next()
+        }
+    }
+
+    fn build_clay_robot(self, blueprint: Blueprint) -> Self {
+        Self {
+            ore: self.ore + self.ore_robots - blueprint.clay_robot_cost,
+            clay_robots: self.clay_robots + 1,
+            ..self.next()
+        }
+    }
+
+    fn build_obsidian_robot(self, blueprint: Blueprint) -> Self {
+        Self {
+            ore: self.ore + self.ore_robots - blueprint.obsidian_robot_ore_cost,
+            clay: self.clay + self.clay_robots - blueprint.obsidian_robot_clay_cost,
+            obsidian_robots: self.obsidian_robots + 1,
+            ..self.next()
+        }
+    }
+
+    fn build_geode_robot(self, blueprint: Blueprint) -> Self {
+        Self {
+            ore: self.ore + self.ore_robots - blueprint.geode_robot_ore_cost,
+            obsidian: self.obsidian + self.obsidian_robots - blueprint.geode_robot_obsidian_cost,
+            geode_robots: self.geode_robots + 1,
+            ..self.next()
+        }
+    }
 }
 
 fn test_blueprint(blueprint: Blueprint) -> usize {
-    let mut ore_robots = 1;
-    let mut clay_robots = 0;
-    let mut obsidian_robots = 0;
-    let mut geode_robots = 0;
+    let mut states: HashSet<State> = [].into(); //State::default()].into();
+    let mut queue = VecDeque::new();
+    queue.push_back(State::default());
+    let mut most_geodes = 0;
+    // let mut states_examined_by_minute: HashMap<usize, u64> = Default::default();
 
-    let mut ore = 0;
-    let mut clay = 0;
-    let mut obsidian = 0;
-    let mut geodes = 0;
+    while let Some(state) = queue.pop_front() {
+        // states_examined_by_minute
+        //     .entry(state.minutes_elapsed)
+        //     .and_modify(|e| *e += 1)
+        //     .or_insert(1);
+        // std::thread::sleep(std::time::Duration::from_millis(500));
+        // dbg!(state);
 
-    let mut minute = 1;
-    while minute <= 24 {
-        let mut new_geode_robots = 0;
-        let mut new_obsidian_robots = 0;
-        let mut new_clay_robots = 0;
-        let mut new_ore_robots = 0;
+        // If we've already seen this state previously and we've already done
+        // as well or better, just skip it.
+        if let Some(previous_state) = states.get(&state) {
+            if previous_state.geodes >= state.geodes {
+                // This skips roughly 76% of states
+                // println!("skipping");
+                continue;
+            }
+        }
 
-        println!("== Minute {minute} ==");
+        most_geodes = most_geodes.max(state.geodes);
 
-        if ore >= blueprint.geode_robot_ore_cost && obsidian >= blueprint.geode_robot_obsidian_cost
+        if state.minutes_elapsed == 24 {
+            continue;
+        }
+
+        // If there's no way to beat the best score, just give up
+        if state.geodes + (24 - state.minutes_elapsed) < most_geodes {
+            continue;
+        }
+
+        states.insert(state);
+
+        // if states.len() % 1_000_000 == 0 {
+        //     println!("{}", states.len());
+        // }
+
+        // Possible decisions:
+        if state.ore >= blueprint.ore_robot_cost {
+            queue.push_back(state.build_ore_robot(blueprint));
+        }
+        if state.ore >= blueprint.clay_robot_cost {
+            queue.push_back(state.build_clay_robot(blueprint));
+        }
+        if state.ore >= blueprint.obsidian_robot_ore_cost
+            && state.clay >= blueprint.obsidian_robot_clay_cost
         {
-            println!("Build geode robot");
-            new_geode_robots += 1;
-            ore -= blueprint.geode_robot_ore_cost;
-            obsidian -= blueprint.geode_robot_obsidian_cost;
+            queue.push_back(state.build_obsidian_robot(blueprint));
+        }
+        if state.ore >= blueprint.geode_robot_ore_cost
+            && state.obsidian >= blueprint.geode_robot_obsidian_cost
+        {
+            // println!("we can build a geode robot!");
+            // dbg!(state);
+            // std::process::exit(0);
+            queue.push_back(state.build_geode_robot(blueprint));
         }
 
-        if ore >= blueprint.obsidian_robot_ore_cost && clay >= blueprint.obsidian_robot_clay_cost {
-            println!("Build obsidian robot");
-            new_obsidian_robots += 1;
-            ore -= blueprint.obsidian_robot_ore_cost;
-            clay -= blueprint.obsidian_robot_clay_cost;
-        }
-
-        if ore >= blueprint.clay_robot_cost {
-            println!(
-                "Spend {} ore to start building a clay-collecting robot.",
-                blueprint.clay_robot_cost
-            );
-            new_clay_robots += 1;
-            ore -= blueprint.clay_robot_cost;
-        }
-
-        if ore >= blueprint.ore_robot_cost {
-            println!(
-                "Spend {} ore to start building a clay-collecting robot.",
-                blueprint.ore_robot_cost
-            );
-            new_ore_robots += 1;
-            ore -= blueprint.ore_robot_cost;
-        }
-
-        ore += ore_robots;
-        println!(
-            "{ore_robots} ore-collecting robot collects {ore_robots} ore; you now have {ore} ore."
-        );
-        clay += clay_robots;
-        println!("{clay_robots} clay-collecting robot collects {clay_robots} ore; you now have {clay} clay.");
-        obsidian += obsidian_robots;
-        println!("{obsidian_robots} obsidian-collecting robot collects {obsidian_robots} ore; you now have {obsidian} obsidian.");
-        geodes += geode_robots;
-        println!("{geode_robots} geode-collecting robot collects {geode_robots} ore; you now have {geodes} open geodes.");
-
-        geode_robots += new_geode_robots;
-        obsidian_robots += new_obsidian_robots;
-        clay_robots += new_clay_robots;
-        ore_robots += new_ore_robots;
-
-        minute += 1;
-        println!();
+        queue.push_back(state.next());
     }
 
-    geodes
+    // dbg!(states_examined_by_minute);
+
+    most_geodes * blueprint.number
 }
