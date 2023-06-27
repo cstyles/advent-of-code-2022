@@ -2,13 +2,13 @@ use std::collections::BinaryHeap;
 
 #[derive(Debug, Copy, Clone)]
 struct Blueprint {
-    number: u16,
-    ore_robot_cost: u16,
-    clay_robot_cost: u16,
-    obsidian_robot_ore_cost: u16,
-    obsidian_robot_clay_cost: u16,
-    geode_robot_ore_cost: u16,
-    geode_robot_obsidian_cost: u16,
+    number: u8,
+    ore_robot_cost: u8,
+    clay_robot_cost: u8,
+    obsidian_robot_ore_cost: u8,
+    obsidian_robot_clay_cost: u8,
+    geode_robot_ore_cost: u8,
+    geode_robot_obsidian_cost: u8,
 }
 
 impl From<&str> for Blueprint {
@@ -60,7 +60,7 @@ fn main() {
 
     let mut part1 = 0;
     for (blueprint_number, handle) in handles {
-        part1 += blueprint_number * handle.join().unwrap();
+        part1 += blueprint_number as u16 * handle.join().unwrap();
     }
     println!("part1 = {part1}");
 
@@ -81,15 +81,15 @@ fn main() {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct State {
-    minutes_elapsed: u16,
-    ore_robots: u16,
-    clay_robots: u16,
-    obsidian_robots: u16,
-    geode_robots: u16,
-    ore: u16,
-    clay: u16,
-    obsidian: u16,
-    geodes: u16,
+    minutes_elapsed: u8,
+    ore_robots: u8,
+    clay_robots: u8,
+    obsidian_robots: u8,
+    geode_robots: u8,
+    ore: u8,
+    clay: u8,
+    obsidian: u8,
+    geodes: u8,
 }
 
 impl Default for State {
@@ -182,21 +182,21 @@ impl Ord for State {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 struct TimelessState {
-    ore_robots: u16,
-    clay_robots: u16,
-    obsidian_robots: u16,
-    geode_robots: u16,
-    ore: u16,
-    clay: u16,
-    obsidian: u16,
-    geodes: u16,
+    ore_robots: u8,
+    clay_robots: u8,
+    obsidian_robots: u8,
+    geode_robots: u8,
+    ore: u8,
+    clay: u8,
+    obsidian: u8,
+    geodes: u8,
 }
 
-fn test_blueprint<const MAX_MINUTES: u16>(blueprint: Blueprint) -> u16 {
-    let mut states: fnv::FnvHashMap<TimelessState, u16> = Default::default();
+fn test_blueprint<const MAX_MINUTES: u8>(blueprint: Blueprint) -> u16 {
+    let mut states: fnv::FnvHashMap<TimelessState, u8> = Default::default();
     let mut heap = BinaryHeap::new();
     heap.push(State::default());
-    let mut most_geodes = 0;
+    let mut most_geodes: u16 = 0;
 
     while let Some(state) = heap.pop() {
         // If we've already seen this state (i.e., this amount of resources
@@ -208,7 +208,7 @@ fn test_blueprint<const MAX_MINUTES: u16>(blueprint: Blueprint) -> u16 {
             }
         }
 
-        most_geodes = most_geodes.max(state.geodes);
+        most_geodes = most_geodes.max(state.geodes as u16);
 
         if state.minutes_elapsed == MAX_MINUTES {
             continue;
@@ -272,10 +272,10 @@ fn dont_need_to_build_obsidian_robot(state: State, blueprint: Blueprint) -> bool
     state.obsidian_robots >= blueprint.geode_robot_obsidian_cost
 }
 
-fn maximum_possible_geodes<const MAX_MINUTES: u16>(mut state: State) -> u16 {
-    let mut max = state.geodes;
+fn maximum_possible_geodes<const MAX_MINUTES: u8>(mut state: State) -> u16 {
+    let mut max: u16 = state.geodes as u16;
     for _ in state.minutes_elapsed..MAX_MINUTES {
-        max += state.geode_robots;
+        max += state.geode_robots as u16;
         state.geode_robots += 1;
     }
 
