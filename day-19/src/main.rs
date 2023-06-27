@@ -172,7 +172,7 @@ fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
         }
 
         // If there's no way to beat the best score, just give up
-        if state.geodes + (MAX_MINUTES - state.minutes_elapsed) < most_geodes {
+        if maximum_possible_geodes::<MAX_MINUTES>(state) <= most_geodes {
             continue;
         }
 
@@ -227,4 +227,14 @@ fn dont_need_to_build_clay_robot(state: State, blueprint: Blueprint) -> bool {
 
 fn dont_need_to_build_obsidian_robot(state: State, blueprint: Blueprint) -> bool {
     state.obsidian_robots >= blueprint.geode_robot_obsidian_cost
+}
+
+fn maximum_possible_geodes<const MAX_MINUTES: usize>(mut state: State) -> usize {
+    let mut max = state.geodes;
+    for _ in state.minutes_elapsed..MAX_MINUTES {
+        max += state.geode_robots;
+        state.geode_robots += 1;
+    }
+
+    max
 }
