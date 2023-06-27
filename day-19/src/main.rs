@@ -90,6 +90,10 @@ struct State {
     clay: u8,
     obsidian: u8,
     geodes: u8,
+    can_build_ore: bool,
+    can_build_clay: bool,
+    can_build_obsidian: bool,
+    can_build_geode: bool,
 }
 
 impl Default for State {
@@ -104,6 +108,10 @@ impl Default for State {
             clay: 0,
             obsidian: 0,
             geodes: 0,
+            can_build_ore: true,
+            can_build_clay: true,
+            can_build_obsidian: true,
+            can_build_geode: true,
         }
     }
 }
@@ -124,6 +132,10 @@ impl State {
         Self {
             ore: self.ore + self.ore_robots - blueprint.ore_robot_cost,
             ore_robots: self.ore_robots + 1,
+            can_build_ore: true,
+            can_build_clay: true,
+            can_build_obsidian: true,
+            can_build_geode: true,
             ..self.next()
         }
     }
@@ -132,6 +144,10 @@ impl State {
         Self {
             ore: self.ore + self.ore_robots - blueprint.clay_robot_cost,
             clay_robots: self.clay_robots + 1,
+            can_build_ore: true,
+            can_build_clay: true,
+            can_build_obsidian: true,
+            can_build_geode: true,
             ..self.next()
         }
     }
@@ -141,6 +157,10 @@ impl State {
             ore: self.ore + self.ore_robots - blueprint.obsidian_robot_ore_cost,
             clay: self.clay + self.clay_robots - blueprint.obsidian_robot_clay_cost,
             obsidian_robots: self.obsidian_robots + 1,
+            can_build_ore: true,
+            can_build_clay: true,
+            can_build_obsidian: true,
+            can_build_geode: true,
             ..self.next()
         }
     }
@@ -150,6 +170,10 @@ impl State {
             ore: self.ore + self.ore_robots - blueprint.geode_robot_ore_cost,
             obsidian: self.obsidian + self.obsidian_robots - blueprint.geode_robot_obsidian_cost,
             geode_robots: self.geode_robots + 1,
+            can_build_ore: true,
+            can_build_clay: true,
+            can_build_obsidian: true,
+            can_build_geode: true,
             ..self.next()
         }
     }
@@ -198,7 +222,7 @@ fn test_blueprint<const MAX_MINUTES: u8>(blueprint: Blueprint) -> u16 {
     heap.push(State::default());
     let mut most_geodes: u16 = 0;
 
-    while let Some(state) = heap.pop() {
+    while let Some(mut state) = heap.pop() {
         // If we've already seen this state (i.e., this amount of resources
         // and robots) previously and we got there in the same amount of time
         // or earlier, just skip this state.
@@ -222,28 +246,37 @@ fn test_blueprint<const MAX_MINUTES: u8>(blueprint: Blueprint) -> u16 {
         states.insert(state.as_timeless(), state.minutes_elapsed);
 
         // Possible decisions:
-        if state.ore >= blueprint.geode_robot_ore_cost
+        if state.can_build_ore
+            && state.ore >= blueprint.geode_robot_ore_cost
             && state.obsidian >= blueprint.geode_robot_obsidian_cost
         {
             heap.push(state.build_geode_robot(blueprint));
+            state.can_build_ore = false;
         }
 
-        if !dont_need_to_build_obsidian_robot(state, blueprint)
+        if state.can_build_clay
+            && !dont_need_to_build_obsidian_robot(state, blueprint)
             && state.ore >= blueprint.obsidian_robot_ore_cost
             && state.clay >= blueprint.obsidian_robot_clay_cost
         {
             heap.push(state.build_obsidian_robot(blueprint));
+            state.can_build_clay = false;
         }
 
-        if !dont_need_to_build_clay_robot(state, blueprint)
+        if state.can_build_obsidian
+            && !dont_need_to_build_clay_robot(state, blueprint)
             && state.ore >= blueprint.clay_robot_cost
         {
             heap.push(state.build_clay_robot(blueprint));
+            state.can_build_obsidian = false;
         }
 
-        if !dont_need_to_build_ore_robot(state, blueprint) && state.ore >= blueprint.ore_robot_cost
+        if state.can_build_geode
+            && !dont_need_to_build_ore_robot(state, blueprint)
+            && state.ore >= blueprint.ore_robot_cost
         {
             heap.push(state.build_ore_robot(blueprint));
+            state.can_build_geode = false;
         }
 
         heap.push(state.next());
