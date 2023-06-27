@@ -200,24 +200,22 @@ fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
             queue.push_back(state.build_geode_robot(blueprint));
         }
 
-        if state.minutes_elapsed < 28 {
-            if state.ore >= blueprint.obsidian_robot_ore_cost
-                && state.clay >= blueprint.obsidian_robot_clay_cost
-            {
-                queue.push_back(state.build_obsidian_robot(blueprint));
-            }
+        if !dont_need_to_build_obsidian_robot(state, blueprint)
+            && state.ore >= blueprint.obsidian_robot_ore_cost
+            && state.clay >= blueprint.obsidian_robot_clay_cost
+        {
+            queue.push_back(state.build_obsidian_robot(blueprint));
         }
 
-        if state.minutes_elapsed < 22 {
-            if state.ore >= blueprint.clay_robot_cost {
-                queue.push_back(state.build_clay_robot(blueprint));
-            }
+        if !dont_need_to_build_clay_robot(state, blueprint)
+            && state.ore >= blueprint.clay_robot_cost
+        {
+            queue.push_back(state.build_clay_robot(blueprint));
         }
 
-        if state.minutes_elapsed < 16 {
-            if state.ore >= blueprint.ore_robot_cost {
-                queue.push_back(state.build_ore_robot(blueprint));
-            }
+        if !dont_need_to_build_ore_robot(state, blueprint) && state.ore >= blueprint.ore_robot_cost
+        {
+            queue.push_back(state.build_ore_robot(blueprint));
         }
 
         queue.push_back(state.next());
@@ -226,4 +224,24 @@ fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
     // dbg!(states_examined_by_minute);
 
     most_geodes
+}
+
+// Returns true if we never need to build another ore robot again
+// (e.g., if we're already producing enough ore)
+fn dont_need_to_build_ore_robot(state: State, blueprint: Blueprint) -> bool {
+    let max_ore_cost = blueprint
+        .ore_robot_cost
+        .max(blueprint.clay_robot_cost)
+        .max(blueprint.obsidian_robot_ore_cost)
+        .max(blueprint.geode_robot_ore_cost);
+
+    state.ore_robots >= max_ore_cost
+}
+
+fn dont_need_to_build_clay_robot(state: State, blueprint: Blueprint) -> bool {
+    state.clay_robots >= blueprint.obsidian_robot_clay_cost
+}
+
+fn dont_need_to_build_obsidian_robot(state: State, blueprint: Blueprint) -> bool {
+    state.obsidian_robots >= blueprint.geode_robot_obsidian_cost
 }
