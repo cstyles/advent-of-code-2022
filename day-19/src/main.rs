@@ -52,11 +52,16 @@ fn main() {
 
     let blueprints: Vec<_> = input.lines().map(Blueprint::from).collect();
 
-    let part1: usize = blueprints
-        .iter()
-        .cloned()
-        .map(|blueprint| blueprint.number * test_blueprint::<24>(blueprint))
-        .sum();
+    let mut handles = vec![];
+    for blueprint in blueprints.clone() {
+        let handle = std::thread::spawn(move || test_blueprint::<24>(blueprint));
+        handles.push((blueprint.number, handle));
+    }
+
+    let mut part1 = 0;
+    for (blueprint_number, handle) in handles {
+        part1 += blueprint_number * handle.join().unwrap();
+    }
     println!("part1 = {part1}");
 
     let mut handles = vec![];
