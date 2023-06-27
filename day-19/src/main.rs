@@ -177,19 +177,6 @@ impl State {
             ..self.next()
         }
     }
-
-    fn as_timeless(self) -> TimelessState {
-        TimelessState {
-            ore_robots: self.ore_robots,
-            clay_robots: self.clay_robots,
-            obsidian_robots: self.obsidian_robots,
-            geode_robots: self.geode_robots,
-            ore: self.ore,
-            clay: self.clay,
-            obsidian: self.obsidian,
-            geodes: self.geodes,
-        }
-    }
 }
 
 impl PartialOrd for State {
@@ -204,34 +191,12 @@ impl Ord for State {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-struct TimelessState {
-    ore_robots: u8,
-    clay_robots: u8,
-    obsidian_robots: u8,
-    geode_robots: u8,
-    ore: u8,
-    clay: u8,
-    obsidian: u8,
-    geodes: u8,
-}
-
 fn test_blueprint<const MAX_MINUTES: u8>(blueprint: Blueprint) -> u16 {
-    let mut states: fnv::FnvHashMap<TimelessState, u8> = Default::default();
     let mut heap = BinaryHeap::new();
     heap.push(State::default());
     let mut most_geodes: u16 = 0;
 
     while let Some(mut state) = heap.pop() {
-        // If we've already seen this state (i.e., this amount of resources
-        // and robots) previously and we got there in the same amount of time
-        // or earlier, just skip this state.
-        if let Some(other_time_elapsed) = states.get(&state.as_timeless()) {
-            if *other_time_elapsed <= state.minutes_elapsed {
-                continue;
-            }
-        }
-
         most_geodes = most_geodes.max(state.geodes as u16);
 
         if state.minutes_elapsed == MAX_MINUTES {
@@ -242,8 +207,6 @@ fn test_blueprint<const MAX_MINUTES: u8>(blueprint: Blueprint) -> u16 {
         if maximum_possible_geodes::<MAX_MINUTES>(state) <= most_geodes {
             continue;
         }
-
-        states.insert(state.as_timeless(), state.minutes_elapsed);
 
         // Possible decisions:
         if state.can_build_ore
