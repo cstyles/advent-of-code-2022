@@ -52,15 +52,27 @@ fn main() {
 
     let blueprints: Vec<_> = input.lines().map(Blueprint::from).collect();
 
-    let part1: usize = blueprints.into_iter().map(test_blueprint).sum();
-    println!("part1 = {part1}");
-    // for blueprint in blueprints {
-    //     println!(
-    //         "blueprint #{} can make {} geodes",
-    //         blueprint.number,
-    //         test_blueprint(blueprint)
-    //     );
-    // }
+    // let part1: usize = blueprints.into_iter().map(test_blueprint::<24>).sum();
+    // println!("part1 = {part1}");
+
+    let mut handles = vec![];
+    for blueprint in blueprints.into_iter().take(3) {
+        let handle = std::thread::spawn(move || test_blueprint::<32>(blueprint));
+        handles.push(handle);
+        // println!(
+        //     "most geodes for blueprint #{} = {}",
+        //     blueprint.number,
+        //     test_blueprint::<32>(*blueprint)
+        // );
+    }
+
+    let mut part2 = 1;
+    for handle in handles {
+        let result = handle.join().unwrap();
+        part2 *= dbg!(result);
+    }
+
+    println!("part2 = {part2}");
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
@@ -139,7 +151,7 @@ impl State {
     }
 }
 
-fn test_blueprint(blueprint: Blueprint) -> usize {
+fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
     let mut states: HashSet<State> = [].into(); //State::default()].into();
     let mut queue = VecDeque::new();
     queue.push_back(State::default());
@@ -166,12 +178,12 @@ fn test_blueprint(blueprint: Blueprint) -> usize {
 
         most_geodes = most_geodes.max(state.geodes);
 
-        if state.minutes_elapsed == 24 {
+        if state.minutes_elapsed == MAX_MINUTES {
             continue;
         }
 
         // If there's no way to beat the best score, just give up
-        if state.geodes + (24 - state.minutes_elapsed) < most_geodes {
+        if state.geodes + (MAX_MINUTES - state.minutes_elapsed) < most_geodes {
             continue;
         }
 
@@ -182,24 +194,30 @@ fn test_blueprint(blueprint: Blueprint) -> usize {
         // }
 
         // Possible decisions:
-        if state.ore >= blueprint.ore_robot_cost {
-            queue.push_back(state.build_ore_robot(blueprint));
-        }
-        if state.ore >= blueprint.clay_robot_cost {
-            queue.push_back(state.build_clay_robot(blueprint));
-        }
-        if state.ore >= blueprint.obsidian_robot_ore_cost
-            && state.clay >= blueprint.obsidian_robot_clay_cost
-        {
-            queue.push_back(state.build_obsidian_robot(blueprint));
-        }
         if state.ore >= blueprint.geode_robot_ore_cost
             && state.obsidian >= blueprint.geode_robot_obsidian_cost
         {
-            // println!("we can build a geode robot!");
-            // dbg!(state);
-            // std::process::exit(0);
             queue.push_back(state.build_geode_robot(blueprint));
+        }
+
+        if state.minutes_elapsed < 28 {
+            if state.ore >= blueprint.obsidian_robot_ore_cost
+                && state.clay >= blueprint.obsidian_robot_clay_cost
+            {
+                queue.push_back(state.build_obsidian_robot(blueprint));
+            }
+        }
+
+        if state.minutes_elapsed < 22 {
+            if state.ore >= blueprint.clay_robot_cost {
+                queue.push_back(state.build_clay_robot(blueprint));
+            }
+        }
+
+        if state.minutes_elapsed < 16 {
+            if state.ore >= blueprint.ore_robot_cost {
+                queue.push_back(state.build_ore_robot(blueprint));
+            }
         }
 
         queue.push_back(state.next());
@@ -207,5 +225,5 @@ fn test_blueprint(blueprint: Blueprint) -> usize {
 
     // dbg!(states_examined_by_minute);
 
-    most_geodes * blueprint.number
+    most_geodes
 }
