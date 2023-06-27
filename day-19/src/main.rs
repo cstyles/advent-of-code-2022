@@ -63,17 +63,12 @@ fn main() {
     for blueprint in blueprints.into_iter().take(3) {
         let handle = std::thread::spawn(move || test_blueprint::<32>(blueprint));
         handles.push(handle);
-        // println!(
-        //     "most geodes for blueprint #{} = {}",
-        //     blueprint.number,
-        //     test_blueprint::<32>(*blueprint)
-        // );
     }
 
     let mut part2 = 1;
     for handle in handles {
         let result = handle.join().unwrap();
-        part2 *= dbg!(result);
+        part2 *= result;
     }
 
     println!("part2 = {part2}");
@@ -156,26 +151,16 @@ impl State {
 }
 
 fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
-    let mut states: HashSet<State> = [].into(); //State::default()].into();
+    let mut states: HashSet<State> = [].into();
     let mut queue = VecDeque::new();
     queue.push_back(State::default());
     let mut most_geodes = 0;
-    // let mut states_examined_by_minute: HashMap<usize, u64> = Default::default();
 
     while let Some(state) = queue.pop_front() {
-        // states_examined_by_minute
-        //     .entry(state.minutes_elapsed)
-        //     .and_modify(|e| *e += 1)
-        //     .or_insert(1);
-        // std::thread::sleep(std::time::Duration::from_millis(500));
-        // dbg!(state);
-
         // If we've already seen this state previously and we've already done
         // as well or better, just skip it.
         if let Some(previous_state) = states.get(&state) {
             if previous_state.geodes >= state.geodes {
-                // This skips roughly 76% of states
-                // println!("skipping");
                 continue;
             }
         }
@@ -192,10 +177,6 @@ fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
         }
 
         states.insert(state);
-
-        // if states.len() % 1_000_000 == 0 {
-        //     println!("{}", states.len());
-        // }
 
         // Possible decisions:
         if state.ore >= blueprint.geode_robot_ore_cost
@@ -224,8 +205,6 @@ fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
 
         queue.push_back(state.next());
     }
-
-    // dbg!(states_examined_by_minute);
 
     most_geodes
 }
