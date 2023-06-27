@@ -176,10 +176,8 @@ fn test_blueprint<const MAX_MINUTES: u16>(blueprint: Blueprint) -> u16 {
     while let Some(state) = heap.pop() {
         // If we've already seen this state previously and we've already done
         // as well or better, just skip it.
-        if let Some(previous_state) = states.get(&state) {
-            if previous_state.geodes >= state.geodes {
-                continue;
-            }
+        if states.contains(&state) {
+            continue;
         }
 
         most_geodes = most_geodes.max(state.geodes);
