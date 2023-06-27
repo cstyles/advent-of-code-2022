@@ -1,4 +1,4 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashSet};
 
 #[derive(Debug, Copy, Clone)]
 struct Blueprint {
@@ -150,13 +150,25 @@ impl State {
     }
 }
 
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.geodes.partial_cmp(&other.geodes)
+    }
+}
+
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.geodes.cmp(&other.geodes)
+    }
+}
+
 fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
     let mut states: HashSet<State> = [].into();
-    let mut queue = VecDeque::new();
-    queue.push_back(State::default());
+    let mut heap = BinaryHeap::new();
+    heap.push(State::default());
     let mut most_geodes = 0;
 
-    while let Some(state) = queue.pop_front() {
+    while let Some(state) = heap.pop() {
         // If we've already seen this state previously and we've already done
         // as well or better, just skip it.
         if let Some(previous_state) = states.get(&state) {
@@ -182,28 +194,28 @@ fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
         if state.ore >= blueprint.geode_robot_ore_cost
             && state.obsidian >= blueprint.geode_robot_obsidian_cost
         {
-            queue.push_back(state.build_geode_robot(blueprint));
+            heap.push(state.build_geode_robot(blueprint));
         }
 
         if !dont_need_to_build_obsidian_robot(state, blueprint)
             && state.ore >= blueprint.obsidian_robot_ore_cost
             && state.clay >= blueprint.obsidian_robot_clay_cost
         {
-            queue.push_back(state.build_obsidian_robot(blueprint));
+            heap.push(state.build_obsidian_robot(blueprint));
         }
 
         if !dont_need_to_build_clay_robot(state, blueprint)
             && state.ore >= blueprint.clay_robot_cost
         {
-            queue.push_back(state.build_clay_robot(blueprint));
+            heap.push(state.build_clay_robot(blueprint));
         }
 
         if !dont_need_to_build_ore_robot(state, blueprint) && state.ore >= blueprint.ore_robot_cost
         {
-            queue.push_back(state.build_ore_robot(blueprint));
+            heap.push(state.build_ore_robot(blueprint));
         }
 
-        queue.push_back(state.next());
+        heap.push(state.next());
     }
 
     most_geodes
