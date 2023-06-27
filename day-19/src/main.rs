@@ -2,13 +2,13 @@ use std::collections::{BinaryHeap, HashSet};
 
 #[derive(Debug, Copy, Clone)]
 struct Blueprint {
-    number: usize,
-    ore_robot_cost: usize,
-    clay_robot_cost: usize,
-    obsidian_robot_ore_cost: usize,
-    obsidian_robot_clay_cost: usize,
-    geode_robot_ore_cost: usize,
-    geode_robot_obsidian_cost: usize,
+    number: u16,
+    ore_robot_cost: u16,
+    clay_robot_cost: u16,
+    obsidian_robot_ore_cost: u16,
+    obsidian_robot_clay_cost: u16,
+    geode_robot_ore_cost: u16,
+    geode_robot_obsidian_cost: u16,
 }
 
 impl From<&str> for Blueprint {
@@ -81,15 +81,15 @@ fn main() {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 struct State {
-    minutes_elapsed: usize,
-    ore_robots: usize,
-    clay_robots: usize,
-    obsidian_robots: usize,
-    geode_robots: usize,
-    ore: usize,
-    clay: usize,
-    obsidian: usize,
-    geodes: usize,
+    minutes_elapsed: u16,
+    ore_robots: u16,
+    clay_robots: u16,
+    obsidian_robots: u16,
+    geode_robots: u16,
+    ore: u16,
+    clay: u16,
+    obsidian: u16,
+    geodes: u16,
 }
 
 impl Default for State {
@@ -167,7 +167,7 @@ impl Ord for State {
     }
 }
 
-fn test_blueprint<const MAX_MINUTES: usize>(blueprint: Blueprint) -> usize {
+fn test_blueprint<const MAX_MINUTES: u16>(blueprint: Blueprint) -> u16 {
     let mut states: HashSet<State> = [].into();
     let mut heap = BinaryHeap::new();
     heap.push(State::default());
@@ -246,7 +246,7 @@ fn dont_need_to_build_obsidian_robot(state: State, blueprint: Blueprint) -> bool
     state.obsidian_robots >= blueprint.geode_robot_obsidian_cost
 }
 
-fn maximum_possible_geodes<const MAX_MINUTES: usize>(mut state: State) -> usize {
+fn maximum_possible_geodes<const MAX_MINUTES: u16>(mut state: State) -> u16 {
     let mut max = state.geodes;
     for _ in state.minutes_elapsed..MAX_MINUTES {
         max += state.geode_robots;
