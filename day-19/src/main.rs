@@ -79,7 +79,7 @@ fn main() {
     println!("part2 = {part2}");
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct State {
     minutes_elapsed: u16,
     ore_robots: u16,
@@ -153,6 +153,19 @@ impl State {
             ..self.next()
         }
     }
+
+    fn as_timeless(self) -> TimelessState {
+        TimelessState {
+            ore_robots: self.ore_robots,
+            clay_robots: self.clay_robots,
+            obsidian_robots: self.obsidian_robots,
+            geode_robots: self.geode_robots,
+            ore: self.ore,
+            clay: self.clay,
+            obsidian: self.obsidian,
+            geodes: self.geodes,
+        }
+    }
 }
 
 impl PartialOrd for State {
@@ -167,17 +180,32 @@ impl Ord for State {
     }
 }
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+struct TimelessState {
+    ore_robots: u16,
+    clay_robots: u16,
+    obsidian_robots: u16,
+    geode_robots: u16,
+    ore: u16,
+    clay: u16,
+    obsidian: u16,
+    geodes: u16,
+}
+
 fn test_blueprint<const MAX_MINUTES: u16>(blueprint: Blueprint) -> u16 {
-    let mut states: fnv::FnvHashSet<State> = Default::default();
+    let mut states: fnv::FnvHashMap<TimelessState, u16> = Default::default();
     let mut heap = BinaryHeap::new();
     heap.push(State::default());
     let mut most_geodes = 0;
 
     while let Some(state) = heap.pop() {
-        // If we've already seen this state previously and we've already done
-        // as well or better, just skip it.
-        if states.contains(&state) {
-            continue;
+        // If we've already seen this state (i.e., this amount of resources
+        // and robots) previously and we got there in the same amount of time
+        // or earlier, just skip this state.
+        if let Some(other_time_elapsed) = states.get(&state.as_timeless()) {
+            if *other_time_elapsed <= state.minutes_elapsed {
+                continue;
+            }
         }
 
         most_geodes = most_geodes.max(state.geodes);
@@ -191,7 +219,7 @@ fn test_blueprint<const MAX_MINUTES: u16>(blueprint: Blueprint) -> u16 {
             continue;
         }
 
-        states.insert(state);
+        states.insert(state.as_timeless(), state.minutes_elapsed);
 
         // Possible decisions:
         if state.ore >= blueprint.geode_robot_ore_cost
