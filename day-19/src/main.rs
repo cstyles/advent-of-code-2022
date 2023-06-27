@@ -52,8 +52,12 @@ fn main() {
 
     let blueprints: Vec<_> = input.lines().map(Blueprint::from).collect();
 
-    // let part1: usize = blueprints.into_iter().map(test_blueprint::<24>).sum();
-    // println!("part1 = {part1}");
+    let part1: usize = blueprints
+        .iter()
+        .cloned()
+        .map(|blueprint| blueprint.number * test_blueprint::<24>(blueprint))
+        .sum();
+    println!("part1 = {part1}");
 
     let mut handles = vec![];
     for blueprint in blueprints.into_iter().take(3) {
