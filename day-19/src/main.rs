@@ -1,4 +1,4 @@
-use std::collections::{BinaryHeap, HashSet};
+use std::collections::BinaryHeap;
 
 #[derive(Debug, Copy, Clone)]
 struct Blueprint {
@@ -168,7 +168,7 @@ impl Ord for State {
 }
 
 fn test_blueprint<const MAX_MINUTES: u16>(blueprint: Blueprint) -> u16 {
-    let mut states: HashSet<State> = [].into();
+    let mut states: fnv::FnvHashSet<State> = Default::default();
     let mut heap = BinaryHeap::new();
     heap.push(State::default());
     let mut most_geodes = 0;
